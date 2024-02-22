@@ -1,0 +1,636 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output: 
+  beamer_presentation: 
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+always_allow_html: true
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "rpart", "rpart.plot", "latex2exp", "MASS", "kernlab", "neuralnet")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+# library(crimedata)
+library(fivethirtyeight)
+library(latex2exp)
+library(ISLR)
+library(stargazer)
+library(MASS)
+library(glmnet)   # LASSO, ridge and elastic nets
+library(randomForest)
+library(kernlab)    # Plots nice SVMs
+library(neuralnet)
+# library(party)
+# library(tree)
+library(rpart)       # performing regression trees
+library(rpart.plot)  # plotting regression trees
+```
+
+
+## Disclaimer
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## What is "machine learning (ML)"?
+- There are many definitions that differ on several aspects
+- Wikipedia says: "Machine learning (ML) is the study of computer algorithms that improve automatically through experience.[1] It is seen as a part of artificial intelligence. Machine learning algorithms build a model based on sample data, known as "training data", in order to make predictions or decisions without being explicitly programmed to do so"
+- 1997 by Professor Tom M. Mitchel from Carnegie Mellon University, in his famous quote from (1997) “A computer program is said to learn from experience E with respect to some class of tasks T and performance measure P if its performance at tasks in T, as measured by P, improves with experience E”. 
+- Self-driving cars use AI systems, the automatic vision system that identifies an imminent accident is ML
+
+## Outline
+\label{outline}
+
+- \hyperlink{shrinkage}{\textbf{Linear models: shrinkage methods}}
+- \hyperlink{trees}{\textbf{Regression trees}}
+    - \hyperlink{Principle}{\textbf{Principle}}
+    - \hyperlink{linear}{\textbf{Trees and linear regression}}
+    - \hyperlink{pruning}{\textbf{Pruning}}
+    - \hyperlink{boosting}{\textbf{Boosting}}
+    <!-- - \hyperlink{Bagging}{\textbf{Bagging}} -->
+- \hyperlink{random}{\textbf{Random forests}}
+- \hyperlink{neural}{\textbf{Neural networks}}
+- Suggested reading: Chapter 8 in \href{https://www.statlearning.com/}{\textbf{ISLR}}
+
+
+##
+\begin{center}
+\LARGE{\textbf{Supervised learning}} \label{supervised}
+\end{center}
+
+## Supervised learning
+- Supervised problems are the most frequent ones for an economist
+- Problems are said supervised when there is an outcome variable $\bm{Y_i}$, so methods can be "supervised" (we can assess the performance of the methods)
+- We went over linear regression and some non parametric methods, for either the purpose of **estimation** or **prediction**. Both are supervised as well
+- In this lecture, we will focus on **prediction** problems
+- So **flexibility** is a major asset for finding the optimal bias-variance trade off
+- For regression problems, we will cover
+    - **Shrinkage methods**
+    - **Trees** and **random forests**
+    - **Neural networks**
+    
+##
+\begin{center}
+\LARGE{\textbf{Shrinkage methods in linear models}} \label{shrinkage}
+\end{center}
+
+## Shrinkage methods
+- \textbf{Shrinkage methods} estimate full linear models (with all the variables), with a constraint on the value of the coefficients
+- Shrinking the estimates can significantly decrease the variance
+- We talk about \textbf{shrinkage} or \textbf{regularization}
+
+## Ridge regression \label{ridge}
+- \textbf{Ridge regression} constrains the sum of the squares of the coefficient estimates. In a linear model, the coefficients minimize the following:
+\[
+\bm{{\hat{\beta}_{Ridge} \equiv \underset{\{ \beta \} }{\textrm{\textbf{argmin}}} \frac{1}{n}\sum_{i=1}^{n}\left(y_i - x_i^{\prime}\beta \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^2}}
+\]
+- $\bm{\lambda}$ is a \textbf{penalty term}. If $\bm{\sum_{j=1}^{p}\beta_j^2}$ is high, the overall quantity is high
+- In the process, ridge regression will set some $\bm{\hat{\beta}}$ to low values, but not 0. So predictions are better, but model interpretation can be an issue
+- $\bm{\lambda}$ should also be found. Use cross validation over a grid of values for $\bm{\lambda}$. For each $\bm{\lambda}$, the model is estimated. Chose the value of $\bm{\lambda}$ that yields the lowest cross validated error
+
+## LASSO \label{lasso}
+- \textbf{Least Absolute Shrinkage and Selection Operator} constrains the sum of the coefficient estimates. In a linear model, the coefficients minimize the following:
+\[
+\bm{{\hat{\beta}_{LASSO} \equiv \underset{\{ \beta \} }{\textrm{\textbf{argmin}}} \frac{1}{n}\sum_{i=1}^{n}\left(y_i - x_i^{\prime}\beta \right)^2 + \lambda \sum_{j=1}^{p}|\beta_j|}}
+\]
+- $\bm{\lambda}$ is a \textbf{penalty term}. If $\bm{\sum_{j=1}^{p}|\beta_j|}$ is high, the overall quantity is high
+- In the process, the LASSO will set some $\bm{\hat{\beta}}$ to 0
+- $\bm{\lambda}$  can be found via cross validation
+- In practice, neither ridge nor LASSO dominate the other. Try both!
+
+## Elastic nets \label{nets}
+- \textbf{Elastic nets} are a combination of LASSO and Ridge regressions. In a linear model, the coefficients minimize the following:
+\[
+\bm{{\hat{\beta}_{elastic} \equiv \underset{\{ \beta \} }{\textrm{\textbf{argmin}}} \frac{1}{n}\sum_{i=1}^{n}\left(y_i - x_i^{\prime}\beta \right)^2 + \lambda (\alpha \sum_{j=1}^{p}|\beta_j| + (1 - \alpha) \sum_{j=1}^{p}\beta_j^2 )  }}
+\]
+- $\bm{\alpha}$ tells us if we go for LASSO ($\bm{\alpha = 1}$), Ridge ($\bm{\alpha = 0}$) or a combination of both ($\bm{0<\alpha<1}$)  
+- $\bm{\lambda}$  can be found via cross validation (see next sections)
+
+## Ridge, LASSO and elastic nets in \textbf{\textsf{Rstudio}}  
+
+- Consider the \textbf{Credit} data set from the \textbf{ISLR} library
+- Reports the \textbf{Balance} (average credit card debt. Not lower than zero here) for a number of individuals with:
+    - Quantitative predictors: \textbf{age, education, income}
+    - Qualitative predictors: \textbf{gender, student, status, ethnicity}
+- We want to predict \textbf{Balance}: what combination of variables to include?
+
+```{r, message = FALSE, results = "hide"}
+data(Credit)
+Credit
+n_obs <- nrow(Credit)
+Credit_1 <- Credit[1:floor(n_obs/3),]
+Credit_2 <- Credit[(floor(n_obs/3)+1):floor(2*n_obs/3),]
+Credit_3 <- Credit[(floor(2*n_obs/3)+1):n_obs,]
+Credit_12 <- rbind(Credit_1, Credit_2) # Combine the first 2 subsets
+K <- ncol(Credit_12)  # number of variables
+```
+
+## Ridge, LASSO and elastic nets in \textbf{\textsf{Rstudio}}  
+\tiny
+
+```{r, message = FALSE, results = "hide"}
+
+# Ridge regression
+cv_ridge <- cv.glmnet(x = data.matrix(Credit_12[ , 1:(K - 1) ]), y = Credit_12$Balance, 
+                      alpha = 0, family="gaussian")
+ridge_lambda <- cv_ridge$lambda.min # optimal lambda for Ridge
+ridge <- glmnet(y = Credit_12$Balance, x = Credit_12[ , 1:(K - 1) ], 
+                alpha = 0, family="gaussian")
+# make predictions
+ridge_fit <- predict(ridge, newx = data.matrix(Credit_3[ , 1:(K - 1)]), s = ridge_lambda ) 
+
+# LASSO regression
+cv_lasso <- cv.glmnet(x = data.matrix(Credit_12[ , 1:(K - 1) ]), y = Credit_12$Balance, 
+                      alpha = 1, family="gaussian")
+lasso_lambda <- cv_lasso$lambda.min # optimal lambda for Lasso
+lasso <- glmnet(y = Credit_12$Balance, x = Credit_12[ , 1:(K - 1) ], 
+                alpha = 1, family="gaussian"  )
+# make predictions
+lasso_fit <- predict(lasso, newx = data.matrix(Credit_3[ , 1:(K - 1)]), s = lasso_lambda) 
+
+# Elastic net
+cv_net <- cv.glmnet(x = data.matrix(Credit_12[ , 1:(K - 1) ]), y = Credit_12$Balance, 
+                    alpha = 0.5, family = "gaussian")
+net_lambda <- cv_net$lambda.min  # optimal lambda for elastic nets
+elastic_net <- glmnet(y = Credit_12$Balance, x = Credit_12[ , 1:(K - 1) ], 
+                      alpha = 0.5, family = "gaussian"  )
+# make predictions
+elastic_fit <- predict(elastic_net, newx = data.matrix(Credit_3[ , 1:(K - 1)]), s = net_lambda) 
+
+```
+
+
+##
+\begin{center}
+\LARGE{\textbf{Regression trees}} \label{trees}
+\end{center}
+
+## What is a regression tree?
+\label{Principle}
+
+- One of the most straightforward, easy to implement machine learning algorithms
+- Very visual, so easy to explain. Actually called **dendrograms**, i.e. tree diagrams
+- Used for \textbf{prediction problems}, in particular with a lot of covariates ("Big data")
+- Principle: make \textbf{binary} splits of the data according to covariate values (take an $\bm{X}$ and split the data in two according to some threshold value of $\bm{X}$)
+- It creates different **regions** (or **terminal nodes** or **leaves**). Each observation falls in one region only
+- The prediction for one observation is the average of all the observations in that region
+
+## Example
+- Say we want to predict someone's income based on a bunch of characteristics
+- We have a sample of data, where each observation is an individual for which we observe income, age, gender, and number of kids
+- We want to predict income, so we build a tree based on the other characteristics
+- Observations with $\bm{Age<30}$ vs $\bm{Age \geq 30}$ are separated
+- It opens two branches: Another binary split is then made in each branch, using another variable
+    - Left branch: $\bm{nkids\leq 1}$ vs $\bm{nkids > 1}$
+    - Right branch: $\bm{Male}$ vs $\bm{Female}$
+- Final prediction of $\bm{Income}$ for individual $\bm{i}$: average income of all individuals in the same region as Mr. $\bm{i}$. So **one** prediction per region
+
+## Building a regression tree
+- How do we build a regression tree?
+    - How do we decide which variable to make a split over?
+    - How do we decide of the value of the variable to make a split over?
+    - How complex do we want our tree to be?
+- Like for the OLS estimator, we want our predictions to be as close as possible to the actual data on average
+- Define the regions $\bm{R_1(j,s)\equiv \{x|x_j<s\}}$ and $\bm{R_2(j,s)\equiv \{x|x_j\geq s\}}$
+- Define the residual sum of squares
+
+\[
+\bm{SSR \equiv \sum_{i:\,x_i \in R_1(j,s)}\left(y_i - \hat{y}_{R_1}\right)^2 + \sum_{i:\,x_i \in R_2(j,s)}\left(y_i - \hat{y}_{R_2} \right)^2}
+\]
+
+## Building a regression tree: Algorithm
+\begin{exampleblock}{Growing a tree: Algorithm}
+\begin{itemize}
+\item Find the variable $\bm{X_j}$ and the threshold value $\bm{s}$ that minimizes $\bm{SSR}$ (loop over all possible covariates and values)
+\item Make the split according to the selected covariate and threshold
+\item \textbf{Repeat} the two previous steps in each newly created region until a criterion is satisfied (for instance, until each region has less than a given number of observations)
+\item \textbf{Compute} predictions by taking the average of the variable of interest for all observations in a terminal node (or leaf)
+\end{itemize}
+\end{exampleblock}
+
+
+
+## Regression trees in \textbf{\textsf{Rstudio}}
+- There are several packages that build regression trees in \textbf{\textsf{R}}
+- We are going with the ***rpart*** package, and will use the ***rpart*** function
+- Let us consider the **Carseats** data set, which consists of child car seats sales, along with market related measures (population in an area, median income, ...)
+
+## Regression trees in \textbf{\textsf{Rstudio}}
+
+- **Sales**: Unit sales (in thousands) at each location
+- **CompPrice**: Price charged by competitor at each location
+- **Income**: Community income level (in thousands of dollars)
+- **Advertising**: Local advertising budget for company at each location (in thousands of dollars)
+- **Population**: Population size in region (in thousands)
+- **Price**: Price company charges for car seats at each site
+- **ShelveLoc**: A factor with levels Bad, Good and Medium indicating the quality of the shelving location for the car seats at each site
+- **Age**: Average age of the local population
+- **Education**: Education level at each location
+- **Urban**: A factor with levels No and Yes to indicate whether the store is in an urban or rural location
+- **US**: A factor with levels No and Yes to indicate whether the store is in the US or not
+
+## Regression trees in \textbf{\textsf{Rstudio}}
+
+\small
+```{r, eval = FALSE}
+library(ISLR)
+carseats <- Carseats  # Data set form the ISLR package
+
+train_index <- sample (1: nrow(carseats ), nrow(carseats )/2)
+test_sample <- carseats[- train_index, ]
+train_sample <- carseats[train_index, ]
+tree_carseats <- rpart(Sales ~ ., data = train_sample, method = "anova")
+# summary(tree_carseats )
+# plotcp(tree_carseats)
+# printcp(tree_carseats)
+rpart.plot(tree_carseats)
+```
+
+## Regression tree in \textbf{\textsf{Rstudio}}
+\tiny
+\centering
+```{r, echo = FALSE, out.width = '75%'}
+library(ISLR)
+carseats <- Carseats
+
+set.seed (123)   # Way to randomly generate the same way every time
+train_index <- sample (1: nrow(carseats ), nrow(carseats )/2)
+test_sample <- carseats[- train_index, ]
+train_sample <- carseats[train_index, ]
+tree_carseats <- rpart(Sales ~ ., data = train_sample, method = "anova")
+# summary(tree_carseats )
+# plotcp(tree_carseats)
+# printcp(tree_carseats)
+rpart.plot(tree_carseats)
+```
+
+
+## Predicting other samples: Illustration in \textbf{\textsf{Rstudio}}
+```{r}
+# Predict the test sample
+tree_fit <- predict(tree_carseats, newdata = test_sample)
+head(tree_fit)
+```
+
+## Regression trees in \textbf{\textsf{Rstudio}}: Overfitting
+
+\centering
+```{r, echo = FALSE, out.width = '80%'}
+train_index <- sample (1: nrow(carseats ), nrow(carseats )/2)
+test_sample <- carseats[- train_index, ]
+train_sample <- carseats[train_index, ]
+tree_carseats_overfit <- rpart(Sales ~ ., data = train_sample, method = "anova", control = rpart.control(minsplit = 1, minbucket = 1, cp = 0.001))
+# summary(tree_carseats )
+# plotcp(tree_carseats)
+# printcp(tree_carseats)
+rpart.plot(tree_carseats_overfit)
+```
+
+## Trees and linear regression
+\label{linear}
+
+- Trees can be assimilated to linear regressions with dummy variables denoting the different thresholds
+- Let $\bm{R_m}$ be region $\bm{m}$
+- Let $\bm{D_m = \mathds{1}\{i \in R_m\},\,i=1,\ldots,M}$ be a binary variable equal to 1 if $\bm{i}$ is in region $\bm{m}$, and 0 otherwise
+- A regression tree can therefore be represented as
+
+\[
+\bm{Y_i = \alpha_1 D_1 + \alpha_2 D_2 + \ldots + \alpha_MD_M + u_i}
+\]
+
+- Estimated by OLS, we get
+\[
+\bm{\hat{\alpha}_m = \frac{1}{n_m}\sum_{i \in R_m} Y_i}
+\]
+where $\bm{n_m}$ is the number of observations inside region $\bm{R_m}$
+
+## Trees and linear regression: Illusration
+- Consider the ***Advertising*** data set, composed of 4 variables
+    - ***Sales*** of a product in 200 different markets
+    - ***TV***, ***Radio*** and ***Newspaper*** report budgets for the three different media
+
+\small
+```{r}
+# Tree version
+advertising <- read.csv("Advertising.csv")
+tree_advertising <- rpart(Sales ~ ., data = advertising, method = "anova")
+```
+
+## Trees and linear regression: Illustration
+
+\centering
+```{r, echo = FALSE, out.width = '80%'}
+# Tree version
+tree_advertising <- rpart(Sales ~ ., data = advertising, method = "anova")
+rpart.plot(tree_advertising)
+```
+
+
+## Trees and linear regression: Illustration
+\small
+
+- Using the thresholds found in the tree, we can define the binary variables corresponding to each final region:
+    - $\bm{D_1 = \mathds{1}\{TV < 30\}}$
+    - $\bm{D_2 = \mathds{1}\{TV < 122 \,\&\, TV > 30 \,\&\, Radio <27  \}}$
+    - $\bm{D_3 = \mathds{1}\{TV < 122 \,\&\, TV > 30 \,\&\, Radio >27 \}}$
+    - $\bm{D_4 = \mathds{1}\{TV > 122  \,\&\, Radio <10 \}}$
+    - $\bm{D_5 = \mathds{1}\{TV > 122  \,\&\, Radio <27 \,\&\, Radio >10\}}$
+    - $\bm{D_6 = \mathds{1}\{TV>122 \,\&\, Radio>27 \,\&\, TV<195\}}$
+    - $\bm{D_7 = \mathds{1}\{TV>122 \,\&\, Radio>27 \,\&\, TV>195 \,\&\, Radio <35\}}$
+    - $\bm{D_8 = \mathds{1}\{TV>122 \,\&\, Radio>27 \,\&\, TV>195 \,\&\, Radio >35\}}$
+
+\vskip -1cm
+
+\begin{align*}
+\bm{Y_i} &  \bm{= \alpha_1D_1 + \alpha_2D_2 } \\
+         &  \bm{+ \alpha_3D_3 + \alpha_4D_4 } \\
+         &  \bm{+ \alpha_5D_5 + \alpha_6D_6 } \\
+         &  \bm{+ \alpha_7D_7 + \alpha_8D_8 + u_i}
+\end{align*}
+
+
+## Trees and linear regression: Illustration
+\footnotesize
+<!-- \scriptsize -->
+```{r}
+# Linear regression version
+# Left part of the tree
+D_1 <- ifelse(advertising$TV < 30, 1, 0)
+D_2 <- ifelse(advertising$TV < 122 & advertising$TV > 30
+              & advertising$Radio < 27, 1, 0)
+D_3 <- ifelse(advertising$TV < 122 & advertising$TV > 30
+              & advertising$Radio > 27, 1, 0)
+# Right part of the tree
+D_4 <- ifelse(advertising$TV > 122 & advertising$Radio < 27
+              & advertising$Radio < 10, 1, 0)
+D_5 <- ifelse(advertising$TV > 122 & advertising$Radio < 27
+              & advertising$Radio > 10, 1, 0)
+D_6 <- ifelse(advertising$TV > 122 & advertising$Radio > 27
+              & advertising$TV < 195, 1, 0)
+D_7 <- ifelse(advertising$TV > 122 & advertising$Radio > 27
+              & advertising$TV > 195 &  advertising$Radio < 35, 1, 0)
+D_8 <- ifelse(advertising$TV > 122 & advertising$Radio > 27
+              & advertising$TV > 195 &  advertising$Radio > 35, 1, 0)
+```
+
+
+## Trees and linear regression: Illustration
+\tiny
+
+```{r}
+summary(lm(Sales ~ -1 + D_1 + D_2 + D_3 + D_4 + D_5 + D_6 + D_7 + D_8, data = advertising))
+```
+
+## Refining trees: Pruning
+\label{pruning}
+
+- A highly complex tree (many splits, each leaf has a small amount of observations) will predict the training data well, but the test data poorly due to \textbf{overfitting}
+- Extreme case: A tree where each region only has one observation in it
+- That model (tree) will feature a high variance
+- \textbf{Pruning} consists in trimming some branches of a very large tree. Call it $\bm{T_0}$
+- How? By including a \textbf{penalty term}
+
+## Refining trees: Pruning
+- Let $\bm{\alpha}$ be a non negative number
+- For each $\bm{\alpha}$, look for a tree $\bm{T}$ that minimizes
+\[
+\bm{\sum_{m=1}^{|T|} \sum_{i:\,x_i \in R_m}\left(y_i - \hat{y}_{R_m}\right)^2 + \alpha|T|}
+\]
+
+- The inner sum is the sum of squared residuals inside a given leaf $\bm{R_m}$
+- The outer sum adds all the squared residuals over all the leaves
+- The last term penalizes complex trees, i.e. trees with a high number of terminal nodes $\bm{|T|}$
+- To each $\bm{\alpha}$, an optimal tree. Which $\bm{\alpha}$ to choose? \textbf{Validation sets} or \textbf{CV}!
+
+## Pruning: Algorithm
+\begin{exampleblock}{Pruning a tree: Algorithm}
+\begin{itemize}
+\item Grow a large tree $\bm{T_0}$
+\item Make a grid of values for $\bm{\alpha}$. For each $\bm{\alpha}$, find the best subtree of $\bm{T_0}$
+\item To find the optimal $\bm{\alpha}$:
+\begin{itemize}
+    \item Divide the sample into $\bm{K}$ folds. $\bm{K=10}$ is standard
+    \item Repeat the first two steps on all but the $\bm{k^{th}}$ fold (grow a big tree, and prune it for each $\bm{\alpha}$)
+    \item Evaluate the test MSE on the fold left out
+    \item Repeat the CV steps by leaving out another fold. Choose $\bm{\alpha}$ that minimizes the average of the test MSEs
+\end{itemize}
+\item Use the optimal $\bm{\alpha}$ to prune $\bm{T_0}$
+\end{itemize}
+\end{exampleblock}
+
+## Pruning: Illustration in \textbf{\textsf{Rstudio}}
+- In the ***rpart*** function, ***cp*** ("complexity parameter") allows to vary the amount of pruning
+- Any split that does not decreases the overall lack of fit by a factor of ***cp*** is not attempted
+- The bigger ***cp***, the more pruning there is, i.e. the less splits are made as it is harder for a split to improve the fit by that much
+- The lower ***cp***, the less pruning there is, i.e. the more splits are made as small improvements in the fit are allowed
+
+## Pruning: Illustration in \textbf{\textsf{Rstudio}}
+```{r}
+# prune the tree
+# Extreme pruning
+pfit_extreme <- prune.rpart(tree_carseats, cp = 0.1)
+# almost no pruning
+pfit_no_pruning <- prune.rpart(tree_carseats, cp = 0.001)
+```
+
+## Extreme pruning: Illustration in \textbf{\textsf{Rstudio}}
+\vskip -1cm
+\centering
+```{r, echo = FALSE, out.width = '99%'}
+rpart.plot(pfit_extreme)
+```
+
+## Light pruning: Illustration in \textbf{\textsf{Rstudio}}
+\centering
+```{r, echo = FALSE, out.width = '75%'}
+rpart.plot(pfit_no_pruning)
+```
+
+## Boosting \label{boosting}
+- **Boosting** is another way to improve the performance of trees
+- Idea: Grow trees based on previous trees
+
+\begin{exampleblock}{Boosting for trees: Algorithm}
+\begin{itemize}
+\item Start with a simple tree (1 or 2 splits). Obtain $\bm{\hat{y}_i}$ and compute the residuals $\bm{r_i = y_i - \lambda\hat{y}_i}$. $\bm{\lambda}$ is a small value so trees improve slowly. Typically 0.01 or 0.001
+\item Grow a simple tree using the residuals as the dependent variable
+\item Repeat the process $\bm{P}$ times
+\item How to find $\bm{P}$? CV!
+\end{itemize}
+\end{exampleblock}
+
+- No resampling here, we just grow small trees based on what is left from the previous small tree
+
+## Bootstrap aggregating (aka Bagging)
+- Growing one tree is nice, but it might still suffer from \textbf{high variance}
+- We saw that averaging always reduces variance. Does not affect the bias though
+- Let's apply this concept here: Grow trees (and prune them) using $\bm{B}$ separate training sets
+- How to get $\bm{B}$ separate training sets? Use the \textbf{bootstrap}:
+    - Re-sample your training data, with replacement (Note: some observations might appear twice)
+    - Run your model on your new sample
+    - Repeat $\bm{B}$ times. Typically $\bm{B}$ is between 100 and 500
+- Since an estimator is random, we typically use its \textbf{asymptotic distribution} to conduct inference
+- \textbf{Bootstrapping} is an alternative if the asymptotic distribution approximation of an estimator is suspicious: the $\bm{B}$ estimates can be used to approximate the finite sample distribution of the estimator
+
+
+## Random forests
+\label{random}
+
+- One can take advantage of **model averaging** and **bootstrapping** to improve trees
+- \textbf{Random forests} take the average predictions of the $\bm{B}$ trees
+- **Reduces the variance, for the same bias**
+- Additional feature: Taking the average of correlated trees has a higher variance than uncorrelated trees
+- So a random subset of $\bm{X}$'s is selected for each tree, so trees are less correlated (because they won't use the same covariates)
+- The result is a \textbf{random forest}: Same bias as a tree, but lower variance, so better out-of-sample predictive power
+
+## Random forests in \textbf{\textsf{R}}
+\centering
+```{r, echo = FALSE, out.width = '70%'}
+rf_carseats <- randomForest(Sales ~., data = train_sample)
+tree_pred <- predict(tree_carseats, newdata = test_sample)
+tree_pred_overfit <- predict(tree_carseats_overfit, newdata = test_sample)
+rf_pred <- predict(rf_carseats, newdata = test_sample)
+dat <- data.frame(test_sample, tree_pred, tree_pred_overfit, rf_pred)
+
+ggplot(data = dat) +
+  geom_point(aes(x = rf_pred, y = Sales, color = "Random forest"))+
+  geom_point(aes(x = tree_pred, y = Sales, color = "Tree"))+
+  geom_point(aes(x = tree_pred_overfit, y = Sales, color = "Overfitted tree"))+
+
+  xlab("Predictions") +
+  ylab("Data") +
+    # scale_color_discrete(labels = c("Random forest", "Tree")) +
+   labs(color = 'Model')+
+    scale_color_manual(values = c('Tree' = 'red',
+                                  "Random forest" = 'blue',
+                                  "Overfitted tree" = 'green')) +
+  theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+
+## Advantages and disadvantages of trees
+- Advantages:
+    - Easy to explain, visually appealing. Anyone can get the gist of it by just looking!
+    - Some say they more closely represent human decision-making than other types of regression
+    - Trees can handle qualitative covariates easily, without the need to create many dummy variables
+- Disadvantages:
+    - Trees don't feature the same level of predictive accuracy as other methods (like neural networks)
+    - Trees can be very non-robust: a small change in the data can have a big change on the structure of the tree (that caveat is offset by bagging, boosting and random forests)
+
+##
+\begin{center}
+\LARGE{\textbf{Neural networks}} \label{neural}
+\end{center}
+
+## Neural networks
+- Ever hard of "deep learning" or "neural networks"?
+- The idea is based on the human brain's structure: Neurons are interconnected through **layers**
+- Each **layer** contains multiple **nodes**
+- Each node is a linear combination of the nodes from the previous layer
+- In a regression setting, it consists in adding layers between $\bm{Y_i}$ (the **output layer**) and the $\bm{X_i}$'s (which are the nodes of the **input layer**). The layers in between are the **hidden layers**
+- Thus we regress $\bm{Y_i}$ on **layers** of the $\bm{X_i}$'s (i.e. on the hidden layers), not just the $\bm{X_i}$'s
+
+## Neural networks
+- Assume we have $\bm{p}$ different covariates
+- Define a **linear combinations** of the $\bm{X_i}$'s called $\bm{Z_i}$ as follows:
+\[
+\bm{Z_i \equiv \sum_{j=1}^{p}\alpha_jX_{i,j}}
+\]
+
+- Now consider $\bm{p_1}$ such combinations (so there are $\bm{p_1}$ different $\bm{Z_i}$, each being a different linear combination of the $\bm{X_i}$'s) and apply a **nonlinear transformation** $\bm{g()}$ to each of them (e.g. $\bm{g(Z_{i,k})=\frac{1}{1+\exp(-Z_{i,k})}, \, k = 1,...,p_1}$)
+- Estimate the following model, i.e. estimate $\bm{\alpha_{j,k}}$ and $\bm{\beta_{k}}$ in
+\[
+\bm{Y_i = \sum_{k=1}^{p_1}\beta_k\,g\left( Z_{i,k} \right) + u_i }
+\]
+
+## Neural networks
+- Estimate the following model, i.e. estimate $\bm{\alpha_{j,k}}$ and $\bm{\beta_{k}}$ in
+\begin{align*}
+\bm{Y_i} & \bm{=\sum_{k=1}^{p_1}\beta_kg\left(Z_{i,k} \right) + \varepsilon_i} \\
+         & \bm{=\sum_{k=1}^{p_1}\beta_kg\left(    \sum_{j=1}^{p}\alpha_{j,k}X_{i,j}  \right) + u_i}
+\end{align*}
+
+- The model is **nonlinear** in the parameters, **nonlinear least squares** will estimate them
+- This is called a **neural network with a single hidden layer with $\bm{p_1}$ nodes**
+
+## Neural networks: Example
+- Imagine there are **2** $\bm{X}$'s, and we make **1** hidden layer with **3** nodes
+- We get
+\begin{align*}
+\bm{Z_{i,1}} & \bm{=\alpha_{1,1}X_{i,1} + \alpha_{1,2}X_{i,2}} \\
+\bm{Z_{i,2}} & \bm{=\alpha_{2,1}X_{i,1} + \alpha_{2,2}X_{i,2}}\\
+\bm{Z_{i,3}} & \bm{=\alpha_{3,1}X_{i,1} + \alpha_{3,2}X_{i,2}}
+\end{align*}
+
+- So we estimate
+\begin{align*}
+\bm{Y_i} &  \bm{= \beta_1g\left(  \alpha_{1,1}X_{i,1} + \alpha_{1,2}X_{i,2}  \right)} \\
+& \bm{+ \beta_2g\left( \alpha_{2,1}X_{i,1} + \alpha_{2,2}X_{i,2}   \right)} \\
+& \bm{+ \beta_3g\left(  \alpha_{3,1}X_{i,1} + \alpha_{3,2}X_{i,2}  \right)} \\
+& \bm{+ u_i}
+\end{align*}
+
+## Neural networks: Example
+\begin{align*}
+\bm{Y_i} & \bm{= \beta_1g\left(  \alpha_{1,1}X_{i,1} + \alpha_{1,2}X_{i,2}  \right) }\\
+& \bm{+ \beta_2g\left( \alpha_{2,1}X_{i,1} + \alpha_{2,2}X_{i,2}   \right)} \\
+& \bm{+ \beta_3g\left(  \alpha_{3,1}X_{i,1} + \alpha_{3,2}X_{i,2}  \right)} \\
+& \bm{+ u_i}
+\end{align*}
+
+- 2 variables and 1 layer with 3 nodes makes $\bm{2(X's) \times 3(Z's) + 3(\beta\,\, \text{per}\, Z) = 9}$ parameters to estimate
+- It is common to add multiple hidden layers (so we would create $\bm{W_i}$ as a linear combinations of the $\bm{Z_i}$'s), thus increasing the **depth** of the neural network (and its flexibility)
+- Say we add a second layer with 4 nodes, it makes $\bm{2(X's)\times 3(Z's)\times 4(W's) + 4(\beta\,\, \text{per}\, W) = 28}$ parameters to estimate
+- More layers increase the flexibility, hence producing better predictions
+
+<!-- ## Neural networks in R -->
+<!-- - ***neural net*** -->
+
+<!-- ```{r} -->
+<!-- # nn_carseats <- neuralnet(Sales ~ CompPrice + Income + Advertising + Population  + Education  + Age, data = train_sample, hidden = 2, act.fct = "logistic") -->
+<!-- # summary(nn_carseats) -->
+<!-- # predict(nn_carseats, newdata = test_sample) -->
+<!-- ``` -->
+
+## Neural networks
+\begin{center}
+\begin{figure}
+\resizebox {0.6\textwidth} {!}
+ {
+\input{neural networks}
+}
+\caption{Neural networks}\end{figure}
+\end{center}
+
+## Neural networks: Takeaways
+- Neural networks are used extensively in the machine learning literature due to their flexibility and predictive power
+- Facial recognition and picture identification (Is it a bird? A plane? No wait! It is ...)
+- See \href{https://artificialintelligence.oodles.io/blogs/deep-learning-for-image-recognition/}{\textbf{here}} and \href{https://www.altexsoft.com/blog/image-recognition-neural-networks-use-cases/}{\textbf{there}}
+- Fancier versions are coming out on a regular basis, but so do easy implementations on statistical software across the board
+
+
+## Conclusion
+- We barely scratched the surface!
+- A lot of research has improved the methods exposed in this lecture
+- But the gist stays the same overall:
+    - Machine learning methods are very suitable for **prediction problems**, **supervised** or **unsupervised**
+    - **Overfitting** is one of the most important problems to deal with
+    - Machine learning algorithms make use of **data driven** procedures (validation sets, cross validation) to fine tune the options in supervised problems (parameters for pruning, depth of neural networks)
+    - For unsupervised problems, tuning of the parameter is less straightforward
+- Many alternatives, it is always good to check more than 1 for robustness of your analysis (and model averaging?)
+- Machine learning algorithms are the base of AI: Program an "error" function to minimize, and improve with experience (i.e. as data come in)
+    
+    

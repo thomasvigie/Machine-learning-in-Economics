@@ -1,0 +1,129 @@
+% Package loading 
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setlength{\parskip}{\medskipamount}
+\setlength{\parindent}{0pt}
+
+% Graphs packages
+\usepackage{tikz, pgfplots}
+\pgfplotsset{compat = newest}
+\usetikzlibrary{intersections, angles, patterns}
+\usepgfplotslibrary{fillbetween}   % To fill areas for surpluses
+
+
+\usepackage{color}
+\usepackage{pbox}
+\usepackage{multirow}
+\usepackage{xcolor} 
+\usepackage{amsthm} 
+\usepackage{amsmath} 
+\usepackage{caption}   
+\usepackage{amssymb} 
+\usepackage[T1]{fontenc} 
+\usepackage{graphicx} 
+\usepackage{graphicx,epsfig} 
+\usepackage{float} 
+\usepackage[caption = false]{subfig}
+\usepackage{soul} 
+\usepackage[countmax]{subfloat}
+\usepackage{rotfloat} 
+\usepackage{slashed} 
+\usepackage{verbatim} 
+\usepackage{epstopdf} 
+\usepackage{eepic} 
+\usepackage{epic} 
+%\usepackage{sgame} %, tikz} 
+\usepackage{listings}   % Allows to insert code into the compiled .pdf
+\lstset{language = [AlLaTeX]TeX}
+
+% Game theory packages
+\usepackage{pstricks,pst-node}
+\usepackage{sgamevar,egameps}
+\usepackage{pstricks,egameps}
+
+% Extensive form games
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+% Style -------------------------------------------------------------------
+
+\newrgbcolor{lightblue}{.80 .91 .99}
+\newrgbcolor{DarkBlue}{0.2 0.30 0.60}
+\newrgbcolor{SeaBlue}{0 0.6 0.8}
+\newrgbcolor{pddblue}{.17 .31 .44}
+\definecolor{pdlblue}{rgb}{.75,.85,.92}
+\definecolor{pdllblue}{rgb}{.9,.95,.98}
+\newrgbcolor{FadeBlue}{0.75 0.85 0.92}
+\newrgbcolor{SkyBlue}{0.6 0.8 1}
+
+\definecolor{SFUgray}{RGB}{84,88,90}
+\definecolor{SFUgold}{RGB}{193,160,30}
+\definecolor{SFUred}{RGB}{166,25,46}
+
+\definecolor{light-gray}{RGB}{236,236,236}
+\definecolor{light-gold}{RGB}{240,232,199}
+\definecolor{lighter-gold}{RGB}{239,235,222}
+\newrgbcolor{darkgreen}{0 0.6 0.4}
+\newrgbcolor{medgreen}{0 0.8 0.4}
+\newrgbcolor{lightgreen}{0.6 1 0.6}
+
+\newrgbcolor{chartreuse}{0.5 1 0}
+\newrgbcolor{charcoal}{0.21 0.27 0.31}
+% Super Saiyan Blue style
+\newrgbcolor{darkcyan}{0 0.55 0.55}
+% Super saiyan God style
+\newrgbcolor{DarkRed}{0.8 0 0.2}
+
+\newrgbcolor{carrot}{0.91 0.41 0.17}
+\newrgbcolor{darkolivegreen}{.33333 .41961 .18431}
+\newrgbcolor{fadedolivegreen}{.96 .97 0.89}
+
+% Hyperlink referencing packages and setup
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor= darkcyan,
+    filecolor=magenta,      
+    urlcolor= darkcyan,
+}
+
+\begin{document}
+
+\pgfplotstableread{RDD.dat}{\table}  % loads data to be plotted
+
+\begin{figure}[H]
+\begin{center}
+\begin{tikzpicture} 
+\begin{axis}[
+xlabel={$X$}, 
+ylabel={$Y$},
+axis lines= middle,
+samples = 41, 
+xmin = 47, xmax = 53,
+ymin = 40, ymax = 70,
+tick style={draw=none},
+xtick = {0, 50} ,
+xticklabels={$0$, $c$},
+ytick = { },
+yticklabels={ },
+legend pos = outer north east,
+legend style={draw=none},   % If we don't want borders around the legend
+xlabel style={below},
+ylabel style={left}]
+
+ % Cutoff point
+\addplot[black, dashed] coordinates {(50, 40) (50, 70)}; 
+% Scatter plot of the data (generated in R)
+\addplot[orange, only marks, , mark size = 1pt] table [x = {x}, y = {y}] {\table};
+
+\end{axis}
+
+\end{tikzpicture}
+\end{center}
+\caption[RDD]{Regression Discontinuity Design}
+\end{figure}
+
+\end{document}

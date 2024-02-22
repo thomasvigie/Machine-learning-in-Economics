@@ -1,0 +1,1178 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  ignorenonframetext,
+  aspectratio=169]{beamer}
+\usepackage{pgfpages}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
+\setbeamertemplate{part page}{
+  \centering
+  \begin{beamercolorbox}[sep=16pt,center]{part title}
+    \usebeamerfont{part title}\insertpart\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \centering
+  \begin{beamercolorbox}[sep=12pt,center]{part title}
+    \usebeamerfont{section title}\insertsection\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{subsection page}{
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center]{part title}
+    \usebeamerfont{subsection title}\insertsubsection\par
+  \end{beamercolorbox}
+}
+\AtBeginPart{
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \frame{\subsectionpage}
+}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\newif\ifbibliography
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage[T1]{fontenc}    % package to select font encodings 
+\usepackage{standalone}     % allows to include another tex file and ignore the package loading and the \begin{document} commands 
+%\usepackage[latin9]{inputenc}
+
+% A couple of useful packages -------------------------------
+\usepackage{xcolor}   % package to get access to more colours, shades, tones, etc
+\usepackage{amsthm}   % package to define theorem-like structures
+\usepackage{amsmath}  % package to improve math related things
+\usepackage{amssymb}  % package for extra mathematical symbols
+\usepackage{bm}
+\usepackage{babel}    % package to include typographical rules from many languages
+\usepackage{graphicx} % package to include graphs, pictures etc
+\usepackage{float}    % package to define an place floats like figures more conveniently
+\usepackage[caption = false]{subfig}  % package to make captions on figures
+\usepackage{pstricks} % package to create colours and other macros
+\usepackage{hyperref}
+% Graphs packages
+\usepackage{tikz, pgfplots}
+\pgfplotsset{compat = newest}
+\usetikzlibrary{intersections, angles, patterns}
+\usepgfplotslibrary{fillbetween}   % For surpluses
+\hypersetup{colorlinks = true, linkcolor = SFUblue, urlcolor = SFUblue}
+
+\mode<presentation>    
+{	
+\usetheme{Luebeck}  % The beamer theme used
+%\usetheme{Boadilla}   % Another beamer theme
+%\usecolortheme{crane}   % A beamer color set. Looks good, but not as good as SFU's colors
+\usecolortheme{SFU}   %The package "beamercolorthemeSFU" is in the same folder as the tex file
+
+\usefonttheme{serif}    
+\usefonttheme{structurebold}   % changes the look of slides titles
+\setbeamertemplate{blocks}[rounded][shadow = true]  % changes the way \block environments look like
+\setbeamertemplate{navigation symbols}{} % Clear navigation symbols at the bottom right corner of the slides
+}
+% Style -------------------------------------------------------------------
+
+\newrgbcolor{lightblue}{.80 .91 .99}
+\newrgbcolor{DarkBlue}{0.2 0.30 0.60}
+\newrgbcolor{SeaBlue}{0 0.6 0.8}
+\newrgbcolor{DarkRed}{0.8 0 0.2}
+\newrgbcolor{pddblue}{.17 .31 .44}
+\definecolor{pdlblue}{rgb}{.75,.85,.92}
+\definecolor{pdllblue}{rgb}{.9,.95,.98}
+\newrgbcolor{FadeBlue}{0.75 0.85 0.92}
+\newrgbcolor{SkyBlue}{0.6 0.8 1}
+
+\definecolor{SFUgray}{RGB}{84,88,90}
+\definecolor{SFUgold}{RGB}{193,160,30}
+\definecolor{SFUred}{RGB}{204,6,51}
+\definecolor{SFUblue}{RGB}{28,79,156}
+
+\definecolor{light-gray}{RGB}{236,236,236}
+\definecolor{light-gold}{RGB}{240,232,199}
+\definecolor{lighter-gold}{RGB}{239,235,222}
+\newrgbcolor{darkgreen}{0 0.3 0.3}
+\newrgbcolor{medgreen}{0 0.8 0.4}
+\newrgbcolor{lightgreen}{0.6 1 0.6}
+\newrgbcolor{chartreuse}{0.5 1 0}
+\newrgbcolor{charcoal}{0.21 0.27 0.31}
+\newrgbcolor{darkcyan}{0 0.55 0.55}
+
+\newrgbcolor{carrot}{0.91 0.41 0.17}
+
+\newrgbcolor{darkolivegreen}{.33333 .41961 .18431}
+\newrgbcolor{fadedolivegreen}{.96 .97 0.89}
+
+\newcommand{\indep}{\raisebox{0.05em}{\rotatebox[origin=c]{90}{$\models$}}} % independence of random variables symbol
+%-------------------------------------------------------------
+\author{}
+\date{\vspace{-2.5em}}    % Shows date of compilation, or nothing if using {}
+%\begin{document}
+%-------------------------------------------------------------
+\setbeamertemplate{itemize items}[square]  % have square bullet points 
+%\beamerdefaultoverlayspecification{<+->} % to make bullet points appear one by one 
+%-----------------------------------------------
+%\title[\color{white}Introduction]{Introduction} 
+%\author[Chapter 1]{\textbf{Simon Fraser University\\ ECON 220W\\ Spring term 2021}} 
+
+
+% Will replace the Rmarkdown titles
+
+%\begin{document}
+
+\AtBeginDocument{\title[\hyperlink{outline}{\color{white}Introduction}]{Introduction \\ Definitions, probabilities, distributions, estimators }}  
+\AtBeginDocument{\author[Chapter 1]{\textbf{Simon Fraser University\\ ECON 483\\ Summer 2023 } \\ \vspace{0.5cm} \begin{center} \includegraphics[scale = 1]{../ECON logo grey.png} \end{center}}   }
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Rmarkdown template},
+  pdfauthor={Thomas Vigié},
+  colorlinks=true,
+  linkcolor={SFUblue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={blue},
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Rmarkdown template}
+\author{Thomas Vigié}
+\date{}
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Disclaimer}
+\protect\hypertarget{disclaimer}{}
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+\end{frame}
+
+\begin{frame}{Regression}
+\protect\hypertarget{regression}{}
+\begin{itemize}
+\tightlist
+\item
+  In this course, we are interested in the following model:
+  \begin{equation}
+  \bm{Y_i = f(X_{i,1},\,X_{i,2},..., \, X_{i,K}) + u_i }
+  \label{regression equation}
+  \end{equation} where:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\bm{Y_i}\) is a outcome variable of interest (also called
+    \textbf{explained variable} or \textbf{dependent variable})
+  \item
+    \(\bm{u_i}\) is a \textbf{random disturbance}, also called the
+    \textbf{error term}
+  \item
+    \(\bm{X_{i,1},...,X_{i,K}}\) are the \textbf{explanatory variables}
+    or the \textbf{independent variables} or the \textbf{covariates} or
+    the \textbf{predictors}
+  \end{itemize}
+\item
+  In words: we are interested in the relationship between the
+  explanatory variables and the explained variable
+\item
+  \(\bm{Y_i}\) and \(\bm{X_{i,1},...,X_{i,K}}\) are random variables. We
+  observe realizations of them in the data
+\item
+  This is called the \textbf{population regression equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Outline \label{outline}}
+\protect\hypertarget{outline}{}
+\begin{itemize}
+\tightlist
+\item
+  \hyperlink{rv}{\textbf{Random variables, distributions, moments}}
+\item
+  \hyperlink{cov}{\textbf{Covariance and correlation}}
+\item
+  \hyperlink{condrv}{\textbf{Conditional probabilities}},
+  \hyperlink{cond exp}{\textbf{expectation}} and
+  \hyperlink{cond var}{\textbf{variance}}
+\item
+  \hyperlink{estimators}{\textbf{Estimators: Definitions and properties}}
+\item
+  \hyperlink{est vs pred}{\textbf{Estimation vs prediction}}
+\item
+  \hyperlink{statmod}{\textbf{What is a statistical model}}
+\item
+  \hyperlink{ML}{\textbf{What is machine learning?}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section}{}
+\begin{center} \label{proba}
+\LARGE{ \textbf{Random variables and probabilities} } 
+\end{center}
+\end{frame}
+
+\begin{frame}{Random variables}
+\protect\hypertarget{random-variables}{}
+\label{rv}
+
+\begin{block}{Definition: Random variable}
+A \textbf{random variable} (r.v. for short) is a variable whose value (= realization) depends on outcomes of a \textbf{random phenomenon}. It is generally denoted by upper case letters ($\bm{X}$, $\bm{Y}$) while their realization are denoted by lower case letters ($\bm{x}$, $\bm{y}$).
+An \textbf{event} is a set of one or more outcomes involving random variables.
+\end{block}
+
+\begin{itemize}
+\tightlist
+\item
+  Take the event ``obtain Heads 5 times out of 7 coin tosses''
+\item
+  Many outcomes lead to that event:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    5 Heads in a row, then 2 Tails
+  \item
+    3 Heads, then 2 Tails, then 2 Heads
+  \item
+    etc (in fact, we could use some combinatorics formulas to figure out
+    how many outcomes corresponds to that event)
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Types of random variables}
+\protect\hypertarget{types-of-random-variables}{}
+\begin{itemize}
+\tightlist
+\item
+  Random variables can be \textbf{discrete} (0, 1, 2, \ldots) or
+  \textbf{continuous} (continuum of values)
+\item
+  Examples of discrete random variables: Age/Number of kids of the next
+  person you meet, number obtained after throwing a die, score obtained
+  at a roulette/Black jack table,\ldots{}
+\item
+  Examples of continuous random variables: Weight/height, temperature,
+  score in a course, \ldots{}
+\item
+  \textbf{Qualitative} variables (Yes/No, Man/Woman, Smoker/Non-smoker,
+  car/bicycle/train/bus) can be turned into \textbf{quantitative}
+  variables: 1 for Man, 0 for Woman, etc \(\Rightarrow\) back to a
+  \textbf{discrete} random variable that a software can understand!
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Probabilities}
+\protect\hypertarget{probabilities}{}
+\begin{block}{Definition: Probability}
+A \textbf{probability} is a number that represents the proportion of the time an event occurs. For an event \textbf{A}, it is denoted $\bm{\mathbb{P}(A)}$.
+\end{block}
+
+Examples:
+
+\begin{itemize}
+\tightlist
+\item
+  Take the event \textbf{A} = ``get a number bigger or equal to 3 when
+  throwing a die''. Then \(\bm{\mathbb{P}(A) = 4/6}\) (get a 3, a 4, a 5
+  or a 6. 4 possible successes out of 6 possible cases)
+\item
+  Let \(\bm{X}\) denote the weight of a person and
+  \(\bm{A = X>150} \,\textrm{lbs}\). Then \(\bm{\mathbb{P}(A)}\) is the
+  probability that a person weighs more than 150 pounds
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Probability distributions: Discrete random variables}
+\protect\hypertarget{probability-distributions-discrete-random-variables}{}
+\label{discrete}
+
+\begin{block}{Probability mass function (pmf)}
+The \textbf{probability mass function} of a discrete random variable is the list of all possible values of the variable along with the probability they occur.
+\end{block}
+
+\begin{itemize}
+\tightlist
+\item
+  Example: The probability mass function of a die throw assigns a
+  probability of 1/6 to each number we can obtain: 1, 2, 3, 4, 5, 6
+\item
+  The probability mass function of a fair coin toss assigns a
+  probability of 50\% to each outcome: Heads or Tails
+\end{itemize}
+
+\begin{block}{Definition: Cumulative distribution function (cdf)}
+The \textbf{cumulative distribution function} is the function that gives the probability that a random variable is lower or equal to a particular value.
+\end{block}
+
+\begin{itemize}
+\tightlist
+\item
+  Example: The probability that a die throw returns a number lower or
+  equal to 5, i.e.~\(\bm{\mathbb{P}(X \leq 5)}\)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Probability distributions: Continuous random variables}
+\protect\hypertarget{probability-distributions-continuous-random-variables}{}
+\label{continuous}
+
+\begin{itemize}
+\tightlist
+\item
+  Since a continuous variable can take an infinite amount of values,
+  \(\bm{\mathbb{P}(X=x) = 0}\) and the previous definition does not make
+  sense here
+
+  \begin{block}{Definition: Probability density function (pdf)}
+  The \textbf{probability density function (pdf)} is the function representing the \textbf{relative likelihood} of a value a random variable can take vs others. The area under the pdf between two points shows the \textbf{probability} that the random variable equals a value between these two points.
+  \end{block}
+  \begin{block}{Definition: Cumulative distribution function (cdf)}
+  The \textbf{cumulative distribution function (cdf)} is the function that gives the probability that a random variable is lower or equal to a particular value.
+  \end{block}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Common distributions}
+\protect\hypertarget{common-distributions}{}
+\small
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Uniform distribution}: It gives the same probability to each
+  possible number \(\bm{X}\) can take. Exists in the discrete case and
+  the continuous case
+\item
+  \textbf{Bernoulli distribution}: Corresponds to r.v. that can be equal
+  to 1 with some probability, and 0 otherwise. Qualitative variables
+  turned into binary (0-1) variables are Bernoulli r.v.
+\item
+  \textbf{Binomial distribution}: Measures the probability of having
+  \(\bm{k}\) successes out of \(\bm{n}\) independent trials involving a
+  Bernoulli r.v. Example: Getting Heads \(\bm{k = 2}\) times out of
+  \(\bm{n=10}\) coin flips
+\item
+  \textbf{Geometric distribution}: Measures the probability of the first
+  success after \(\bm{k}\) attempts
+\item
+  \textbf{Hypergeometric distribution}: Measures the probability of
+  having \(\bm{k}\) successes out of \(\bm{n}\) draws from a finite
+  population of size \(\bm{N}\) with \(\bm{K}\) objects corresponding to
+  a success (draw \(\bm{k}\) blue balls out of \(\bm{n}\) draws in a urn
+  with \(\bm{N}\) balls overall and \(\bm{K}\) blue balls)
+\item
+  \textbf{Normal distribution}: Continuous distribution that describes
+  many variables in real life, and used in many statistical theorems
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The normal distribution}
+\protect\hypertarget{the-normal-distribution}{}
+\label{normal}
+
+\begin{itemize}
+\tightlist
+\item
+  Also called \textbf{Gaussian} distribution after Carl Friedrich Gauss
+  (genius mathematician)
+\item
+  Invented by Gauss and Laplace (French) almost simultaneously, but
+  independently
+\item
+  Important parameters: The mean \(\bm{\mu}\) and the variance
+  \(\bm{\sigma^2}\). They are enough to characterize the full
+  probability distribution so it is denoted
+  \(\bm{X \sim \mathcal{N}(\mu, \sigma^2)}\).
+\item
+  Notable features:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Symmetric and centered around the mean (the mean is the same as the
+    median)
+  \item
+    The sum of normal r.v. is itself a normal r.v.
+  \item
+    The ``Bell curve'': Higher probability of being around the mean than
+    around the extremes
+  \end{itemize}
+\item
+  Equation of the density function:
+  \(\bm{ \phi (x) = \frac{1}{\sqrt{2\pi \sigma ^2}} \exp(-\frac{(x - \mu)^2}{2\sigma ^2} ) }\)
+\item
+  No need to remember the density function expression
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Expectation of a random variable}
+\protect\hypertarget{expectation-of-a-random-variable}{}
+\label{moment}
+
+\begin{itemize}
+\tightlist
+\item
+  In order to understand the distribution of a r.v., it is relevant to
+  look at measures of location and dispersion
+\item
+  These measures are called moments: of order 1 like the expectation,
+  order 2 like the variance, and more
+
+  \begin{block}{Definition: Expectation}
+  The expectation of $\bm{X}$, denoted $\bm{\mathbb{E}[X]}$ (or often $\bm{\mu_X}$), is the average value $\bm{X}$ takes.
+  \begin{itemize}
+  \item For a discrete r.v : $\bm{\mathbb{E}[X] = \sum_{i = 1}^{n}x_i\mathbb{P}(X = x_i)}$
+  \item For a continuous r.v : $\bm{\mathbb{E}[X] = \int_{-\infty}^{+\infty}xf(x)dx}$ where $\bm{f(x)}$ is the pdf of $\bm{X}$ (no need to know this one)
+  \end{itemize}
+  \end{block}
+\item
+  For a 6-faced die throw (\(\bm{X}\) is the obtained number):
+  \(\bm{\mathbb{E}[X]=\frac{1}{6}\times 1 + \frac{1}{6}\times 2 + ... + \frac{1}{6}\times 6= 3.5}\)
+\item
+  Note: When \(\bm{X}\) is discrete, the expectation of \(\bm{X}\) is
+  often not equal to any value that \(\bm{X}\) can take (e.g.~a die
+  throw)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Properties of the expectation}
+\protect\hypertarget{properties-of-the-expectation}{}
+\begin{block}{Properties of expectations}
+Let $\bm{X}$ and $\bm{Y}$ be two random variables, and $\bm{a}$ and $\bm{b}$ be two constants. Then:
+\begin{itemize}
+\item $\bm{\mathbb{E}[aX] = a\mathbb{E}[X]}$ 
+\item $\bm{\mathbb{E}[X + Y] = \mathbb{E}[X] + \mathbb{E}[Y]}$ (linearity)
+\item $\bm{\mathbb{E}[a] = a}$ ($\bm{a}$ is not random)
+\item In general: $\bm{\mathbb{E}[XY]\neq \mathbb{E}[X]\mathbb{E}[Y]}$
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Variance of a random variable}
+\protect\hypertarget{variance-of-a-random-variable}{}
+\begin{block}{Definition: Variance}
+The variance of $\bm{X}$, denoted $\bm{\mathbb{V}[X]}$ (often denoted $\bm{\sigma^2}$), is the expectation of the squared deviation from the mean: 
+\begin{align*}
+\bm{\mathbb{V}[X]} & \bm{\equiv \mathbb{E}[(X - \mathbb{E}[X])^2]}\\
+                   & \bm{= \sum_{i = 1}^{n}(x_i-\mathbb{E}[X])^2\mathbb{P}(X = x_i)}
+\end{align*}
+An \textbf{equivalent} formula is $$\bm{\mathbb{V}[X] \equiv \mathbb{E}[X^2] - (\mathbb{E}[X])^2}$$
+and the \textbf{standard deviation} of $\bm{X}$ (often denoted $\bm{\sigma}$) is the square root of the variance.
+\end{block}
+\end{frame}
+
+\begin{frame}{Properties of the variance}
+\protect\hypertarget{properties-of-the-variance}{}
+\begin{itemize}
+\tightlist
+\item
+  Because of the square, \(\bm{\mathbb{V}[X]}\) is expressed in the
+  square of the unit of \(\bm{X}\). But the standard deviation is
+  expressed in the original unit
+\item
+  The second formula is more useful for r.v. that take a few values
+\end{itemize}
+
+\begin{block}{Properties of the variance}
+Let $\bm{X}$ and $\bm{Y}$ be two random variables, and $\bm{a}$ and $\bm{b}$ be two constants. Then:
+\begin{itemize}
+\item $\bm{\mathbb{V}[aX] = a^2\mathbb{V}[X]}$ (the constant can come out, but since the variance is a square, we need to square the constant)
+\item $\bm{\mathbb{V}[a] = 0}$ ($\bm{a}$ is a constant, so its average is $\bm{a}$, and it never varies)
+\item $\bm{\mathbb{V}[X+Y] = \mathbb{V}[X] + \mathbb{V}[Y] + 2cov(X,Y)}$ 
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Two random variables}
+\protect\hypertarget{two-random-variables}{}
+\begin{itemize}
+\tightlist
+\item
+  Often, we do not deal with one random variable but two or more
+\item
+  Some random variables are \textbf{correlated}, i.e.~the variation of
+  one influences the variation of the other (especially in Economics!)
+\item
+  Examples:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    The proportion of smokers is not the same among men vs women. So the
+    probability of meeting a smoker is different if it is a man we meet
+    or a woman
+  \item
+    The proportion of smokers is (definitely!) not the same among
+    Canadian vs French people. So the probability of meeting a smoker is
+    different if we are in Canada or in France
+  \item
+    Consumption is not the same between rich and poor households. So
+    Consumption is affected by income
+  \end{itemize}
+\item
+  We need to look at measures of \textbf{covariation} between two random
+  variables
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Covariance between two random variables}
+\protect\hypertarget{covariance-between-two-random-variables}{}
+\label{cov}
+
+\begin{block}{Definition: Covariance}
+The \textbf{covariance} between $\bm{X}$ and $\bm{Y}$, denoted $\bm{Cov(X,Y)}$ (or $\bm{\sigma_{XY}}$), is the expectation of the products of the deviations from the mean: 
+\begin{align*}
+\bm{Cov(X,Y)} &\bm{\equiv \mathbb{E}[(X - \mathbb{E}[X])(Y - \mathbb{E}[Y])]} \\
+              &\bm{= \sum_{i = 1}^{n}\sum_{j = 1}^{n}\mathbb{P}(Y = y_i,X=x_j)(x_j - \mathbb{E}[X])(y_i - \mathbb{E}[Y])}
+\end{align*}
+An \textbf{equivalent} formula is $$\bm{Cov(X,Y) \equiv \mathbb{E}[XY] - \mathbb{E}[X]\mathbb{E}[Y]}$$
+\end{block}
+\end{frame}
+
+\begin{frame}{Properties of the covariance}
+\protect\hypertarget{properties-of-the-covariance}{}
+\begin{block}{Properties of the covariance}
+Let $\bm{X}$, $\bm{Y}$ and $\bm{Z}$ be three random variables, and $\bm{a}$ and $\bm{b}$ be two constants. Then:
+\begin{itemize}
+\item A negative covariance means the two random variables evolve in opposite directions
+\item A positive covariance means the two random variables evolve in the same direction
+\item $\bm{Cov(aX, Y) = a\,Cov(X,Y)}$ 
+\item $\bm{Cov(X+Z,Y) = Cov(X,Y)+ Cov(Z,Y)}$ \textbf{(linearity)}
+\item $\bm{Cov(aX+Z,bY) = ab\,Cov(X,Y)+ b\,Cov(Z,Y)}$ 
+\item $\bm{\mathbb{V}[X+Y] = \mathbb{V}[X] + \mathbb{V}[Y] + 2Cov(X,Y)}$
+\item $\bm{Cov(X, X)=\mathbb{V}[X]}$ (check the covariance formula when $\bm{X}$ is in both places!)
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Correlation between two random variables}
+\protect\hypertarget{correlation-between-two-random-variables}{}
+\begin{itemize}
+\tightlist
+\item
+  The scale of the covariance is tricky: It is the unit of \(\bm{X}\)
+  times the unit of \(\bm{Y}\)
+\item
+  A ``unit-free'' measure is the \textbf{correlation} between \(\bm{X}\)
+  and \(\bm{Y}\)
+
+  \begin{block}{Definition: Correlation}
+  The \textbf{correlation} between $\bm{X}$ and $\bm{Y}$, denoted $\bm{Corr(X,Y)}$ (or $\bm{\rho_{XY}}$), is defined as: 
+  $$
+  \bm{Corr(X,Y) \equiv \frac{Cov(X,Y)}{\sqrt{\mathbb{V}[X]\mathbb{V}[Y]} } }
+  $$
+  \end{block}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Properties of the correlation}
+\protect\hypertarget{properties-of-the-correlation}{}
+\begin{itemize}
+\tightlist
+\item
+  The units at the top and bottom cancel!
+\item
+  \(\bm{Corr(X,Y)}\) is always between \textbf{-1} and \textbf{1}
+\item
+  If \(\bm{Corr(X,Y)=0}\) then we say \(\bm{X}\) and \(\bm{Y}\) are
+  \textbf{uncorrelated}
+\item
+  Note: if \(\bm{Cov(X,Y)=0}\) then \(\bm{Corr(X,Y)=0}\)
+\item
+  Correlation does not imply causality! The whole difficulty of
+  Econometrics is to disentangle the two: Correlation is easy to find
+  (just a formula), but causality is more challenging to establish, and
+  requires a deeper analysis
+\item
+  Check out the
+  \href{https://www.tylervigen.com/spurious-correlations}{\textbf{spurious correlations website}}
+  for weird correlations that have nothing to do with causality
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-1}{}
+\begin{center} \label{condrv}
+\LARGE{ \textbf{Conditional probabilities} } 
+\end{center}
+\end{frame}
+
+\begin{frame}{Conditional probabilities}
+\protect\hypertarget{conditional-probabilities}{}
+\begin{block}{Definition: Conditional probability}
+The \textbf{conditional probability} of a random variable $\bm{Y}$ \textbf{given} the value of a random variable $\bm{X}$, denoted $\bm{\mathbb{P}(Y=y|X=x)}$ or $\bm{\mathbb{P}(Y|X)}$ is the probability of $\bm{Y}$ taking a value $\bm{y}$ when the value of $\bm{X}$ is fixed at some value $\bm{x}$.
+\end{block}
+
+\begin{itemize}
+\tightlist
+\item
+  Example: Consider the world as being composed of circles vs non
+  circles, and smokers vs non smokers. We know that \(\bm{20\%}\) of
+  people are circles, and \(\bm{80\%}\) are not. Among circles,
+  \(\bm{30\%}\) are smokers and among non circles, \(\bm{60\%}\) are
+  smokers. Let \(\bm{X}\) be the circle status and \(\bm{Y}\) be the
+  smoking status (we could make them equal to \(\bm{0}\) or \(\bm{1}\)).
+  We know:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{smoker}} \bm{|X=} \textrm{\textbf{circle}} \bm{)=0.3}\)
+    and
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{non smoker}} \bm{|X=} \textrm{\textbf{circle}} \bm{)=0.7}\)
+  \item
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{smoker}} \bm{|X=} \textrm{\textbf{non circle}} \bm{)=0.6}\)
+    and
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{non smoker}} \bm{|X=} \textrm{\textbf{non circle}} \bm{)=0.4}\)
+  \item
+    \(\bm{\mathbb{P}(X=} \textrm{\textbf{circle}} \bm{)=0.2}\) and
+    \(\bm{\mathbb{P}(X=} \textrm{\textbf{non circle}} \bm{)=0.8}\)
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional probabilities (cont'd)}
+\protect\hypertarget{conditional-probabilities-contd}{}
+\begin{itemize}
+\tightlist
+\item
+  In words: we know the probability of meeting a circle or non circle,
+  and the probability of meeting a smoker \textbf{among (or given)}
+  circles or non circles
+\item
+  What we don't know:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{smoker}} \bm{)}\) and
+    \(\bm{\mathbb{P}(Y=} \textrm{\textbf{non smoker}} \bm{)}\)
+  \item
+    \(\bm{\mathbb{P}(X=} \textrm{\textbf{circle}} \bm{|Y=} \textrm{\textbf{smoker}} \bm{)}\)
+    and
+    \(\bm{\mathbb{P}(X=} \textrm{\textbf{circle}} \bm{|Y=} \textrm{\textbf{non smoker}} \bm{)}\)
+  \end{itemize}
+\item
+  In words: we don't know the probability of meeting a smoker (we don't
+  know their total proportion), nor the probability of meeting a circle
+  \textbf{among (or given)} smokers or non smokers
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional expectation}
+\protect\hypertarget{conditional-expectation}{}
+\label{cond exp}
+
+\begin{itemize}
+\tightlist
+\item
+  The same way we consider conditional probabilities, we can look at
+  conditional expectations, i.e.~the expectation of a r.v. when another
+  r.v. is fixed
+\item
+  Example: Let \(\bm{Y}\) be the temperature in Celsius degrees. Let
+  \(\bm{X}\) be either Vancouver, or Hasparren (beautiful town in the
+  Basque country). The average annual temperatures are
+  \(\bm{\mathbb{E}[Y|X=}\textrm{\textbf{Hasparren}}\bm{ ]=13.5^\circ C}\)
+  and
+  \(\bm{\mathbb{E}[Y|X=}\textrm{\textbf{Vancouver}}\bm{ ]=11^\circ C}\)
+
+  \begin{block}{Definition: Conditional expectation}
+  Consider the random variables $\bm{X}$ and $\bm{Y}$. The expectation of $\bm{Y}$ conditional on $\bm{X}$ is defined as:
+  $$
+  \bm{\mathbb{E}[Y|X=x] = \sum_{i = 1}^{n}y_i\mathbb{P}(Y = y_i|X=x)}
+  $$
+  \end{block}
+\item
+  Note: Since it depends on what \(\bm{X}\) is equal to, a conditional
+  expectation is \textbf{random}!
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The law of iterated expectations}
+\protect\hypertarget{the-law-of-iterated-expectations}{}
+\begin{itemize}
+\tightlist
+\item
+  If Hasparren and Vancouver were the only 2 locations in the world,
+  then \(\bm{\mathbb{E}[Y]}\), the world annual average temperature,
+  would be the average of
+  \(\bm{\mathbb{E}[Y|X=}\textrm{\textbf{Hasparren}}\bm{ ]}\) and
+  \(\bm{\mathbb{E}[Y|X=}\textrm{\textbf{Vancouver}} \bm{ ]}\)
+\item
+  So the expectation of \(\bm{X}\) is an average of the conditional
+  expectations!
+
+  \begin{thm*}[Law of iterated expectations]
+  The expectation of a random variable is the expectation of conditional expectations:
+  $$
+  \bm{\mathbb{E}[Y]=\mathbb{E}[\mathbb{E}[Y|X]]}
+  $$
+  \end{thm*}
+\item
+  When looking at \(\bm{\mathbb{E}[Y|X]}\), \(\bm{X}\) is fixed. The
+  outside expectation is going over the distribution of \(\bm{X}\)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional variance}
+\protect\hypertarget{conditional-variance}{}
+\label{cond var}
+
+\begin{block}{Definition: Conditional variance}
+The conditional variance of $\bm{Y}$ given $\bm{X=x}$, denoted $\bm{\mathbb{V}[Y|X]}$, is the expectation of the squared deviation from the mean, conditional on $\bm{X=x}$: 
+\begin{align*}
+\bm{\mathbb{V}[Y|X]} & \bm{\equiv \mathbb{E}[(X - \mathbb{E}[Y|X])^2|X]}\\
+                     & \bm{= \sum_{i = 1}^{n}(x_i-\mathbb{E}[Y|X])^2)\mathbb{P}(Y = y_i|X)}
+\end{align*}
+An equivalent formula is $$\bm{\mathbb{V}[Y|X]=\mathbb{E}[Y^2|X]- (\mathbb{E}[Y|X])^2  } $$
+\end{block}
+\end{frame}
+
+\begin{frame}{Population vs sample}
+\protect\hypertarget{population-vs-sample}{}
+\begin{itemize}
+\tightlist
+\item
+  \(\bm{\mathbb{P}(X=x)}\), \(\bm{\mathbb{E}[X]}\) and
+  \(\bm{\mathbb{V}[X]}\) are \textbf{population} values: They are
+  \textbf{not} random
+\item
+  Note: not all random variables have an expectation or a variance!
+  Check the Cauchy distribution for an eccentric case
+\item
+  Any statistic derived from a \textbf{sample} is random. Give me
+  another sample, and these measures will be different
+\item
+  Since sample values (like the sample mean) are random, they can have
+  an expectation and their variance is different from 0 (reminder: the
+  variance of a nonrandom variable is 0)
+\item
+  So \(\bm{\bar{X}}\), \(\bm{\hat{p}}\) or \(\bm{\hat{y}_i}\) are
+  random: they change with every sample. This is why we care about their
+  \textbf{bias}, \textbf{variance} and \textbf{consistency}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-2}{}
+\begin{center} \label{estimators}
+\LARGE{ \textbf{  Estimators} }
+\end{center}
+\end{frame}
+
+\begin{frame}{Estimators}
+\protect\hypertarget{estimators}{}
+\begin{itemize}
+\tightlist
+\item
+  An estimator is a rule to compute an estimate of a given quantity
+  given some data
+\item
+  It produces no more than a guess, educated or not
+\item
+  If we had access to the population data, we would use it to find, say,
+  \(\bm{\mathbb{E}[X]}\)
+\item
+  Since we only have access to a sample of it, we are going to use an
+  estimator to compute an estimate
+\item
+  \textbf{Ideally}, the bigger the sample, the closer we should get to
+  the truth
+\item
+  Estimates are sample values, so an estimator is random, and hence has
+  an \textbf{expectation}
+\item
+  Computing estimates over different samples should tell us something
+  reliable on \textbf{average}
+\item
+  An estimator being random, we would like to use its distribution to
+  infer something about the true value of the parameter of interest
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Desirable properties of estimators}
+\protect\hypertarget{desirable-properties-of-estimators}{}
+\begin{block}{Definition: Consistency}
+An estimator $\bm{\hat{\theta}}$ of a nonrandom quantity $\bm{\theta}$ is \textbf{consistent} (or \textbf{asymptotically unbiased}) if it converges in probability towards the value it estimates:
+\[
+\bm{\hat{\theta}} \overset{\mathbb{P}}{\rightarrow}  \bm{\theta}
+\]
+where $\overset{\mathbb{P}}{\rightarrow}$ denotes convergence in probability, i.e. $\bm{\forall \varepsilon>0}$, $\bm{\mathbb{P}\left( |\hat{\theta} - \theta| > \varepsilon  \right) \rightarrow 0}$ as $\bm{n \rightarrow \infty}$
+\end{block}
+
+\begin{block}{Definition: Unbiasedness}
+An estimator $\bm{\hat{\theta}}$ of a nonrandom quantity $\bm{\theta}$ is \textbf{unbiased} if on \textbf{average}, it equals the true value of the quantity of interest:
+\[
+\bm{\mathbb{E}[\, \hat{\theta} \,]= \theta}
+\]
+\end{block}
+\end{frame}
+
+\begin{frame}{Desirable properties of estimators (cont'd)}
+\protect\hypertarget{desirable-properties-of-estimators-contd}{}
+\begin{block}{Definition: Asymptotic normality}
+An estimator $\bm{\hat{\theta}}$ is said to be \textbf{asymptotically normal} if, as the sample size $\bm{n\rightarrow \infty}$:
+\[
+\bm{{\sqrt{n}(\hat{\theta}) \overset{d}{\rightarrow} \mathcal{N}(\theta, \Omega)}}
+\]
+where $\bm{\theta}$ and $\bm{\Omega}$ are some nonrandom quantities
+\end{block}
+\end{frame}
+
+\begin{frame}{Desirable properties of estimators (cont'd)}
+\protect\hypertarget{desirable-properties-of-estimators-contd-1}{}
+\begin{itemize}
+\tightlist
+\item
+  Many (most) estimators are \textbf{biased}. For some, we can have an
+  idea of the bias direction
+\item
+  But being \textbf{consistent} makes them reliable given the sample
+  used is big enough. If an estimator is consistent, the bigger the
+  sample, the more accurate the estimator, and the closer the estimate
+  is to the true value
+\item
+  \textbf{Asymptotic normality} allows to make \textbf{inference} about
+  the true value of the parameter, i.e.~to draw probabilistic
+  conclusions about the true parameter, such as
+  \textbf{confidence intervals}
+\item
+  Both \textbf{consistency} and \textbf{asymptotic normality} rely on
+  having a large sample
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Estimation vs prediction}
+\protect\hypertarget{estimation-vs-prediction}{}
+\label{est vs pred}
+
+\begin{itemize}
+\tightlist
+\item
+  The whole course is about estimating
+  \(\bm{f(x_{i,1},\,x_{i,2},..., \, x_{i,K})}\)
+\item
+  But what assumptions to make or tools to use depends on whether one
+  wants to \textbf{estimate} or \textbf{predict}
+\item
+  \textbf{Estimation} is about learning about a specific parameter of
+  interest. Estimation problems make assumptions about the nature of the
+  function \(\bm{f()}\) in \eqref{regression equation} and look for the
+  effect of specific variables. Often, adding other variables is meant
+  to satisfy assumptions ensuring the accuracy of the estimation method
+\item
+  \textbf{Prediction} is about guessing, predicting the value of the
+  dependent variable given some values of the covariates. So it is about
+  making accurate predictions
+  \(\bm{\hat{y}_i=\hat{f}(x_{i,1},\,x_{i,2},..., \, x_{i,K})}\).
+  Whichever variables are improving predictions will be added, they do
+  not have to have a particular relevance theoretically speaking
+\item
+  The two problems often overlap. But keep in mind what each method
+  covered in the course is used for!
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional expectation and MSE}
+\protect\hypertarget{conditional-expectation-and-mse}{}
+\begin{itemize}
+\item
+  In general, one wants to find the best function \(\bm{f()}\), i.e.~the
+  one that \textbf{minimizes} the expected distance between \(\bm{Y_i}\)
+  and \(\bm{f(X_i)}\)
+\item
+  That expected distance is called the \textbf{Mean Squared Error}: \[
+  \bm{  MSE(f(X_i)) \equiv \mathbb{E} [(Y_i - f(X_i))^2] }
+  \]
+\item
+  By the law of iterated expectations that says
+  \(\bm{\mathbb{E}[Y]=\mathbb{E}[\mathbb{E}[Y|X]]}\), we have \[
+  \bm{  MSE(f(X_i)) \equiv \mathbb{E} \left[ \mathbb{E} [(Y_i - f(X_i))^2|X_i]\right] }
+  \]
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional expectation and MSE (cont'd)}
+\protect\hypertarget{conditional-expectation-and-mse-contd}{}
+\begin{itemize}
+\tightlist
+\item
+  From the general variance formula:
+  \(\bm{\mathbb{V}[X_i] = \mathbb{E}[X_i^2] - (\mathbb{E}[X_i])^2}\) so
+  \(\bm{ \mathbb{E}[X_i^2] = \mathbb{V}[X_i] + (\mathbb{E}[X_i])^2}\)
+  and that is the case in the conditional case too
+\item
+  The MSE can be rewritten \begin{align*}
+  \bm{MSE(f(X_i))} & \bm{= \mathbb{E} \left[ \mathbb{E} [(Y_i - f(X_i))^2|X_i]\right] }\\
+                 & \bm{= \mathbb{E} \left[ \mathbb{V} [Y_i - f(X_i)|X] + (\mathbb{E}[Y_i - f(X_i)|X])^2 \right] } \\
+                 & \bm{= \mathbb{V} [Y_i |X_i] + (\mathbb{E}[Y_i - f(X_i)|X_i])^2}  \\
+                 & \bm{= \mathbb{V} [Y_i |X_i] + (\mathbb{E}[Y_i|X_i] - \mathbb{E}[f(X_i)|X_i])^2} \\
+                 & \bm{= \mathbb{V} [Y_i |X_i] + (\mathbb{E}[Y_i|X_i] - f(x_i))^2 }\\
+  \end{align*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional expectation and MSE (cont'd)}
+\protect\hypertarget{conditional-expectation-and-mse-contd-1}{}
+\[
+\bm{MSE(f(X_i)) = \mathbb{V} [Y_i |X_i] + (\mathbb{E}[Y_i|X_i] - f(x_i))^2 }
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  The first term does not contain \(\bm{f(X_i)}\), so it is irrelevant
+\item
+  If we want to minimize \(\bm{MSE(f(X_i))}\), we need to minimize the
+  second term (the first term would vanish in the first order condition)
+\item
+  That second term is a square, so it is always positive. Minimizing it
+  means making it equal to 0: \[
+  \bm{f(x_i) = \mathbb{E}[Y_i|X_i]}
+  \]
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conditional expectation and MSE (cont'd)}
+\protect\hypertarget{conditional-expectation-and-mse-contd-2}{}
+\begin{itemize}
+\item
+  The best predictor of \(\bm{Y_i}\) by a function of \(\bm{X_i}\) in
+  the MSE sense is the conditional expectation of \(\bm{Y_i}\) given
+  \(\bm{X_i}\)!!
+\item
+  In the linear model, we make the assumption
+  \(\bm{\mathbb{E}[Y_i|X_i] = \beta_0 + \beta_1 x_i}\)
+\item
+  Plug that in \(\bm{MSE(f(X_i))}\) and you get \[
+  \bm{MSE(\beta_0, \beta_1)= \mathbb{E}[(Y_i - \beta_0 - \beta_1 X_i)^2]}
+  \]
+\item
+  Rings a bell? It is the population version of \[
+  \bm{\frac{1}{n} \sum_{i=1}^n (y_i - \beta_0 - \beta_1 x_i)^2}
+  \]
+\item
+  The objective function the OLS estimates minimize! (see lecture on
+  linear models)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What is a statistical model?}
+\protect\hypertarget{what-is-a-statistical-model}{}
+\label{statmod}
+
+\begin{itemize}
+\tightlist
+\item
+  A statistical model is a set of \textbf{assumptions} about the
+  distribution of some data or about their relationships
+\item
+  Example: Consider a pair of equally weighted six-sided dice.
+  Underlying assumption: the probability of a die falling on any number
+  is equal to \(\bm{1/6}\)
+\item
+  Example: Consider a pair of weighted six-sided dice. Underlying
+  assumption; the probability of a die falling on any number differs
+  depending on what face we are thinking of. The probabilities could be
+  given to us, or not. And our job could be to figure out the weighting
+  of the dice based on a sample of data
+\item
+  These assumptions will have consequences on the properties of the
+  statistical procedures used
+\item
+  If we wrongly believe that the dice are equally weighted, our
+  computations and conclusions will be wrong
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Model types}
+\protect\hypertarget{model-types}{}
+3 types of statistical models are distinguished:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Parametric models}: models with a finite number of parameters
+  (known or unknown). Parametric models specify the distribution of the
+  error term typically (models estimated via
+  \textbf{maximum likelihood estimators} are parametric)
+\item
+  \textbf{Semiparametric models}: models with a finite-dimensional
+  component and an infinite-dimensional component. Some assumptions are
+  made about the distribution of some random variables, but the
+  distribution is not fully specified (typically, linear models are
+  semiparametric models as we generally only assume moments for the
+  error term, not the full distribution)
+\item
+  \textbf{Nonparametric models}: models with an infinite number of
+  parameters. Minimal assumptions are made for such models. We remain
+  agnostic about the shape of \(\bm{f()}\), as we only care about making
+  good predictions
+  \(\bm{\hat{y}_i=\hat{f}(x_{i,1},\,x_{i,2},..., \, x_{i,K})}\)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The role of assumptions in a model}
+\protect\hypertarget{the-role-of-assumptions-in-a-model}{}
+\begin{itemize}
+\tightlist
+\item
+  The assumptions made have a crucial role for the properties of the
+  estimators
+\item
+  The more restrictive the assumptions, the better the properties of the
+  estimator. Is it always worth making restrictive assumptions though?
+\item
+  Some assumptions are purely technical and needed for estimators to
+  have the desired properties. Also hard to verify
+\item
+  Other assumptions are based on common sense: given the data at hand,
+  does it makes sense to assume this or that? There can be evidence in
+  favor of an assumption or not
+\item
+  As a consequence, one estimator might be preferred to another
+\end{itemize}
+\end{frame}
+
+\begin{frame}{What is machine learning?}
+\protect\hypertarget{what-is-machine-learning}{}
+\label{ML}
+
+\begin{itemize}
+\tightlist
+\item
+  There are many definitions that differ on several aspects
+\item
+  Wikipedia says: ``Machine learning (ML) is the study of computer
+  algorithms that improve automatically through experience.{[}1{]} It is
+  seen as a part of artificial intelligence. Machine learning algorithms
+  build a model based on sample data, known as''training data'', in
+  order to make predictions or decisions without being explicitly
+  programmed to do so''
+\item
+  1997 by Professor Tom M. Mitchel from Carnegie Mellon University, in
+  his famous quote from (1997) ``A computer program is said to learn
+  from experience E with respect to some class of tasks T and
+  performance measure P if its performance at tasks in T, as measured by
+  P, improves with experience E''.
+\item
+  Self-driving cars use AI systems, the automatic vision system that
+  identifies an imminent accident is ML
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Learning types}
+\protect\hypertarget{learning-types}{}
+\textbf{Broadly}, 2 types of learning are distinguished:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Supervised learning}: There is a response variable
+  \(\bm{Y_i}\) with associated predictors
+  \(\bm{X_{i,j}, \, \, j=1,...,K}\). The objective is to estimate a
+  relationship between \(\bm{Y_i}\) and the \(\bm{X}\)'s, or predict
+  \(\bm{Y_i}\) (Example: \textbf{regression methods})
+\item
+  \textbf{Unsupervised learning}: There is no response variable, only
+  variables \(\bm{X_{i,j}, \, \, j=1,...,K}\). The objective is to
+  understand the relationships between the variables or the observations
+  (Example: \textbf{cluster analysis} seeks to group observations in
+  categories according to the value of the variables)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Course outline}
+\protect\hypertarget{course-outline}{}
+\begin{itemize}
+\tightlist
+\item
+  We will go over many methods that are part of statistical learning
+\item
+  Linear models are \textbf{semiparametric methods} that allow to
+  estimate marginal effects as well as make predictions. But they impose
+  constraints on the shape of \(\bm{f()}\)
+\item
+  \textbf{Nonparametric methods}: Generally used for prediction
+  purposes, they assume very little about the shape of \(\bm{f()}\) and
+  allow for arbitrary flexibility:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Nearest neighbors
+  \item
+    kernel methods
+  \item
+    Regression/classification trees
+  \item
+    Neural networks
+  \end{itemize}
+\item
+  \textbf{Unsupervised learning}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Principal component analysis
+  \item
+    Clustering
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,1257 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output: 
+  beamer_presentation: 
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+classoption: "aspectratio=169" 
+urlcolor: blue
+linkcolor: SFUblue
+---
+
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "party", "tree", "rpart", "rpart.plot")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+library(crimedata)
+library(fivethirtyeight)
+library(ISLR)
+library(stargazer)
+library(latex2exp)
+library(AER)
+library(nlme)
+library(wooldridge)
+library(np)
+# library(randomForest)
+# library(party)
+# library(tree)
+# library(rpart)       # performing regression trees
+# library(rpart.plot)  # plotting regression trees
+```
+## Disclaimer
+I do not allow this content to be published without my consent.
+
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## Outline
+\label{outline}
+
+<!-- - \hyperlink{lin-algebra}{\textbf{Multivariate extension: Matrix algebra basics}} -->
+- \hyperlink{linmod}{\textbf{Multivariate linear models: Definition, assumptions}}
+- \hyperlink{ols}{\textbf{The Ordinary Least Squares estimator}}
+    - \hyperlink{principle}{\textbf{Principle}}
+    <!-- - \hyperlink{derivation}{\textbf{Derivation}} -->
+    - \hyperlink{R2}{\textbf{Goodness of fit}}
+    - \hyperlink{properties}{\textbf{Properties}}
+    - \hyperlink{inference}{\textbf{Inference}}
+- \hyperlink{illustration}{\textbf{Illustration in \textbf{\textsf{RStudio}}} } 
+    <!-- - \hyperlink{illustration}{\textbf{Beauty and the Labour Market (1994)} } -->
+    <!-- - \hyperlink{Graddy}{\textbf{Fast food prices and race discrimination (1997)} } -->
+<!-- - Suggested reading: Chapters 6 and 7 in \textbf{Stock and Watson} -->
+- \hyperlink{vio}{\textbf{Violation of model assumptions}}
+-   \hyperlink{ass 1}{\textbf{Assumption 1: Linearity}}
+-   \hyperlink{ass 2}{\textbf{Assumption 2: i.i.d sample}}
+-   \hyperlink{ass 3}{\textbf{Assumption 3: Exogeneity}}
+-   \hyperlink{ass 4}{\textbf{Assumption 4: No collinearity}}
+-   \hyperlink{ass 5}{\textbf{Assumption 5: Homoskedasticity}}
+
+
+
+
+## Multivariate linear model
+\label{linmod}
+
+- Consider the following model:
+\[
+\bm{Y_i = \beta_0 + \beta_1X_{i,1} + \beta_2X_{i,2} + ... + \beta_KX_{i,K} + u_i}
+\]
+- There are $\bm{K+1}$ different variables (the $\bm{+1}$ is the intercept), with their associated coefficients
+- In vector notation:
+\[
+\bm{Y_i = \left(1 \,\, X_{i,1}\,\, X_{i,2} \,\, ...\,\, X_{i,K}   \right)} \bm{\left(} \begin{array}{c}
+\bm{\beta_{0}}\\
+\bm{\beta_{1}}\\
+\bm{\beta_{2}}\\
+\vdots\\
+\bm{\beta_{K}}
+\end{array}\bm{\right)} \bm{+ u_i}
+\]
+\[
+\bm{Y_i = X_i^{\prime}\beta + u_i}
+\]
+
+
+## Multivariate linear model
+- $\bm{X_i^{\prime}}$ could be $\bm{\left(1 \,\, Age_{i}\,\, Education_{i} \,\, ...\,\, Income_{i}   \right)}$
+- We can then stack these rows on top of each other to get the covariates matrix
+\[
+\bm{X\equiv\left(} \begin{array}{ccccc}
+\bm{1} & \bm{Age_{1}} & \bm{Education_{1}} & \dots & \bm{Income_{1}}\\
+\bm{1} & \bm{Age_{2}} & \bm{Education_{2}} & \dots & \bm{Income_{2}}\\
+\vdots & \vdots & \vdots & \vdots\\
+\bm{1} & \bm{Age_{n}} & \bm{Education_{n}} & \dots & \bm{Income_{n}}
+\end{array} \bm{\right)}
+\]
+
+## Linear models: Assumptions
+\begin{assumption}[: Linearity\label{linearity}]
+Consider the following model:
+\[
+\bm{Y_{i}=X_{i}^{\prime}\beta+ u_{i}}
+\]
+
+where:
+\begin{itemize}
+\item $\bm{Y_{i}}$ is the \textbf{dependent variable}
+\item $\bm{X_{i}}$ is the vector of $\bm{K+1}$ \textbf{independent variables} or \textbf{explanatory variables}
+\item $\bm{\beta}$ is the $\bm{K+1}$ vector \textbf{parameters} of interest: $\bm{\beta_0}$, $\bm{\beta_1}$,..., $\bm{\beta_K}$
+\item $\bm{u_{i}}$ is the \textbf{error term} 
+\end{itemize}
+\end{assumption}
+- Note: The model is \textbf{linear in the parameters}
+
+## Linear model (cont'd)
+\begin{assumption}[: i.i.d. sample]\label{iid}
+An Independent and Identically Distributed sample is available: $\bm{\{x_{i,1}, x_{i,2},...,x_{i,K}, \, y_i\}, \, \, \, i=1,...,n}$
+\end{assumption}
+- Note: For Assumption \textbf{\ref{iid}} we use lower case letters are they are observations of the random variables $\bm{X_{i,1},X_{i,2},...,X_{i,K}}$ and $\bm{Y_i}$
+
+## Linear model (cont'd)
+\begin{assumption}[: Exogeneity\label{exo}]
+The error term has an expectation of 0 conditional on $X_i$: 
+\[
+\bm{\mathbb{E}[u_{i}|X_i]=0\, \, \, \, \, \forall i=1,...,n}
+\]
+\end{assumption}
+- In words: When fixing $\bm{X_i}$ to a value $\bm{x}$, the error term $\bm{u_i}$ is on average 0. I.e. when looking at individuals for which $\bm{X=x}$, their error term is equal to 0 on average 
+- Note: $\bm{X_i}$ is now a vector, so $\bm{x}$ is a vector of numbers too
+- Note: By the law of iterated expectation it means $\bm{\mathbb{E}[u_i] = \mathbb{E} [\mathbb{E}(u_i|X_i)] = \mathbb{E}[0]=0   }$
+- Interpretation: $\bm{\mathbb{E}[Y_i|X_i=x_i]=\mathbb{E}[X_{i}^{\prime}\beta + u_{i}|X_i=x_i]=x_{i}^{\prime}\beta }$
+
+## Linear model (cont'd)
+\begin{assumption}[: No collinearity\label{full_rank}]
+The $\bm{[n \times (K+1)]}$ matrix $\bm{X}$ gathering the observations $\bm{x_i}$ has rank $\bm{K+1}$, i.e. it is full column rank.
+\end{assumption}
+
+- In words: No covariate can be expressed as a linear combination of the other covariates. For instance, do not include $\bm{X_i}$ and a covariate $\bm{Z_i= aX_i}$ where $\bm{a}$ is a constant
+- Interpretation: Using $\bm{X_i}$ or $\bm{Z_i}$ is equivalent to using the same information, so using both is redundant
+- Numerically speaking, that implies a problem when computing the inverse of a matrix. It is the equivalent of dividing by 0 when we divide by a number
+
+## Linear model (cont'd)
+\begin{assumption}[: Homoskedasticity\label{homo}]
+The conditional variance of the error term does not change with $\bm{i}$:
+\[
+\bm{\mathbb{V}\left[u_i | X_i \right] = \sigma^2(x_i) = \sigma^2}
+\]
+\end{assumption}
+- Note: Assumption \textbf{\ref{homo}} states that the variance of the error term does not depend on the value taken by $\bm{X_i}$
+
+## Assumptions: Remarks
+- Assumption \textbf{\ref{linearity}} assumes the form of the relationship between $\bm{Y_i}$ and $\bm{X_i}$. A linear form makes the coefficients interpretable: A coefficient $\bm{\beta_k}$ associated to a variable $\bm{X_{i,k}}$ represents the marginal effect of $\bm{X_{i,k}}$ on $\bm{Y_i}$: $\bm{\beta_k = \frac{\partial Y_i}{\partial X_{i,k}}}$, \textbf{keeping all the other $\bm{X}$'s constant}
+- Assumption \textbf{\ref{iid}} is \textbf{needed} to show the consistency and asymptotic normality of the OLS estimator
+- Assumption \textbf{\ref{exo}} is \textbf{needed} to show the consistency and asymptotic normality of the OLS estimator
+- Assumption \textbf{\ref{full_rank}} is \textbf{needed} to show the consistency and asymptotic normality of the OLS estimator
+- Assumption \textbf{\ref{homo}} allows the OLS estimator to have an appealing property for inference (BLUE). It is not needed to get **consistency**, **unbiasedness** or **asymptotic normality**
+
+##
+\begin{center}  \label{ols}
+\LARGE{\textbf{Ordinary Least Squares} }
+\end{center}
+
+## The Ordinary Least Squares (OLS) estimator  \label{principle}
+- As in the univariate case, we want to minimize the distance between the predictions and the actual data:
+\[
+\bm{\hat{\beta}_{OLS} \equiv} \underset{\bm{\{ \beta_0,..., \beta_K \}} }{\textrm{\textbf{argmin}}} \bm{\frac{1}{n}\sum_{i=1}^{n}\left(y_i - x_i^{\prime}\beta \right)^2}
+\]
+- We now have $\bm{K + 1}$ first order conditions. But they look all the same (same as the univariate case)
+- Matrix notation can help us solve the system of equations more easily
+- The objective function can be rewritten in matrix terms
+- Let $\bm{Y=\left(} \begin{array}{c}
+\bm{y_{1}}\\
+\bm{y_{2}}\\
+\vdots\\
+\bm{y_{n}}
+\end{array}\bm{\right)}$
+be $\bm{[n \times 1]}$ the vector of data about the dependent variable
+
+
+## The Ordinary Least Squares (OLS) estimator 
+- Let 
+\[
+\bm{ X \equiv \left(} \begin{array}{cccc}
+\bm{1} &  \bm{x_{1,1}}  & \dots & \bm{x_{1,K}}\\
+\bm{1} &  \bm{x_{2,1}}  & \dots & \bm{x_{2,K}}\\
+\vdots &  \vdots & \vdots & \vdots\\
+\bm{1} &  \bm{x_{n,1}}  & \dots & \bm{x_{n,K}}
+\end{array} \bm{\right)}
+\]
+be the $\bm{[n \times (K+1)]}$ matrix of data containing the observations for the covariates
+- The first column is full of ones: It is the intercept!
+
+## The Ordinary Least Squares (OLS) estimator: FOC  
+- Time to take the first order conditions!
+- There will be $\bm{K+1}$ of them, and hence a system of $\bm{K+1}$ equations with $\bm{K+1}$ unknowns
+- That is where linear algebra meets calculus. It allows us to take a derivative with respect to a vector, i.e. with respect to each variable in a vector at once, and the system of equations will be easier to solve that the traditional substitution method
+\begin{align*}
+\bm{\frac{\partial Q}{\partial \beta}(\hat{\beta}_{OLS})} &= \bm{-2}\underset{\bm{[(K+1)\times n]}}{\bm{X^{\prime}}}\underset{\bm{[n\times 1]}}{\bm{(Y-X\hat{\beta}_{OLS})}}  \bm{=} \underset{\bm{[(K+1)\times 1]}}{\bm{0}}  \\
+                                                          &\Leftrightarrow \underset{\bm{[(K+1)\times (K+1)]}}{\bm{X^{\prime}X} } \bm{\hat{\beta}_{OLS}}  = \underset{\bm{[(K+1) \times 1]}}{\bm{X^{\prime}Y}}  \\
+              &\bm{{\Leftrightarrow \underset{[(K+1)\times 1]}{ \hat{\beta}_{OLS}} = \underset{[(K+1)\times (K+1)]}{(X^{\prime}X)^{-1}} \underset{[(K+1)\times 1]}{X^{\prime}Y}  }}
+\end{align*}
+
+## The Ordinary Least Squares (OLS) estimator  
+\[
+\bm{\hat{\beta}_{OLS} = (X^{\prime}X)^{-1}X^{\prime}Y }
+\]
+
+- The $\bm{(X^{\prime}X)^{-1}}$ term is the equivalent of $\bm{1/\widehat{Var}(X_i) }$ in the univariate case
+\[
+\bm{X^{\prime}X} = \bm{ \left(} \begin{array}{cccc}
+\bm{1} &  \bm{1}  & \dots & \bm{1}\\
+\bm{x_{1,1}} &  \bm{x_{2,1}}  & \dots & \bm{x_{n,1}}\\
+\vdots &  \vdots & \ddots & \vdots\\
+\bm{x_{1,K}} &  \bm{x_{2,K}}  & \dots & \bm{x_{n,K}}
+\end{array} \bm{\right)}
+\bm{ \left(} \begin{array}{cccc}
+\bm{1} &  \bm{x_{1,1}}  & \dots & \bm{x_{1,K}}\\
+\bm{1} &  \bm{x_{2,1}}  & \dots & \bm{x_{2,K}}\\
+\vdots &  \vdots & \ddots & \vdots\\
+\bm{1} &  \bm{x_{n,1}}  & \dots & \bm{x_{n,K}}
+\end{array} \bm{\right)}
+\]
+\[
+\bm{X^{\prime}X} = \bm{ \left(} \begin{array}{cccc}
+\bm{n} &  \bm{\sum_{i=1}^n x_{i,1}}  & \dots & \bm{\sum_{i=1}^n x_{i,K}}\\
+\bm{\sum_{i=1}^n x_{i,1}} &  \bm{\sum_{i=1}^n x_{i,1}^2}  & \dots & \bm{\sum_{i=1}^n x_{i,1}x_{i,K}}\\
+\vdots &  \vdots & \ddots & \vdots\\
+\bm{\sum_{i=1}^n x_{i,K}} &  \bm{\sum_{i=1}^n x_{i,1}x_{i,K}}  & \dots & \bm{\sum_{i=1}^n x_{i,K}^2}
+\end{array} \bm{\right)}
+\]
+
+## The OLS estimator formula  
+\[
+\bm{X^{\prime}X} = \bm{ \left(} \begin{array}{cccc}
+\bm{n} &  \bm{\sum_{i=1}^n x_{i,1}}  & \dots & \bm{\sum_{i=1}^n x_{i,K}}\\
+\bm{\sum_{i=1}^n x_{i,1}} &  \bm{\sum_{i=1}^n x_{i,1}^2}  & \dots & \bm{\sum_{i=1}^n x_{i,1}x_{i,K}}\\
+\vdots &  \vdots & \ddots & \vdots\\
+\bm{\sum_{i=1}^n x_{i,K}} &  \bm{\sum_{i=1}^n x_{i,1}x_{i,K}}  & \dots & \bm{\sum_{i=1}^n x_{i,K}^2}
+\end{array} \bm{\right)}
+\]
+
+- We can see portions of sample variances and covariances
+- The inverse of that matrix will contain elements of sample variances and covariances too
+- But **careful**: In the multivariate case, $\bm{\hat{\beta}_1 \neq \frac{\widehat{Cov}(X_{i,1},Y_i)}{\widehat{Var}(X_{i,1})}}$ !
+- It is because the covariance between all the different $\bm{X}$'s gets in the way
+
+
+## The OLS estimator formula
+- The $\bm{X^{\prime}Y}$ term is the equivalent of $\bm{\widehat{Cov}(X_i, Y_i)}$ in the univariate case
+\[
+\bm{X^{\prime}X} = \bm{ \left(} \begin{array}{cccc}
+\bm{1} &  \bm{1}  & \dots & \bm{1}\\
+\bm{x_{1,1}} &  \bm{x_{2,1}}  & \dots & \bm{x_{n,1}}\\
+\vdots &  \vdots & \ddots & \vdots\\
+\bm{x_{1,K}} &  \bm{x_{2,K}}  & \dots & \bm{x_{n,K}}
+\end{array} \bm{\right)}
+\bm{ \left(} \begin{array}{c}
+\bm{y_1} \\
+\bm{y_2} \\
+\vdots \\
+\bm{y_n}
+\end{array} \bm{\right)}
+\]
+\[
+\bm{X^{\prime}Y} =
+\bm{ \left(} \begin{array}{c}
+\bm{\sum_{i=1}^n y_i} \\
+\bm{\sum_{i=1}^n y_ix_{i,1}} \\
+\vdots \\
+\bm{\sum_{i=1}^n y_ix_{i,K}}
+\end{array} \bm{\right)}
+\]
+
+## OLS as a linear estimator
+- The OLS estimator is part of the class of \textbf{linear estimators}
+\begin{dfn*}[Linear estimators]
+A linear estimator for a dependent variable $\bm{Y_i}$ is of the form
+\[
+\bm{\hat{Y} \equiv LY}
+\]
+where $\bm{L}$ is a $\bm{[n \times n]}$ matrix. Equivalently:
+\[
+\bm{\hat{y}_i = \sum_{j=1}^n L_{i,j}y_j}
+\]
+In other words, the predictions are made by taking a linear combination of the observations of the dependent variable
+\end{dfn*}
+
+
+## The OLS estimator: Estimate and predictions
+- We now have an estimate of the **marginal effect** of **each** $\bm{X_k}$ on $\bm{Y_i}$: $\bm{\hat{\beta}_k}$
+- We can also build predictions of $\bm{y_i}$ for any value of $\bm{x_i}$:
+\[
+\bm{\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1x_{i,1} + \hat{\beta}_2x_{i,2} +... + \hat{\beta}_Kx_{i,K}  }
+\]
+- Note: If $\bm{x_{i,k} = 0}$ for each $\bm{k}$, then $\bm{\hat{y}_i = \hat{\beta}_0 }$, the intercept of the estimated regression line
+- It would make less sense to plot $\bm{Y_i}$ against $\bm{X_{i,k}}$ since there are many other $\bm{X}$'s. Or we would need to fix them first
+- A plot of $\bm{Y_i}$ against $\bm{\hat{Y}_i}$ always makes sense: The closer the points to the 45 degrees line, the closer the predictions to the actual data
+
+## The OLS estimator: Interpretation
+- Say we have a regression with 2 variables, $\bm{X_{i,1}}$ and $\bm{X_{i,2}}$
+- We find  and $\bm{ \hat{\beta}_0 = 2}$, $\bm{ \hat{\beta}_1 = 3.5}$ and $\bm{ \hat{\beta}_2 = 5}$
+- It means that if $\bm{x_{i,1}}$ increases by **one** unit, $\bm{y_i}$ increases by $\bm{\frac{\partial y_i}{\partial x_{i,1}} = \hat{\beta}_1 = 3.5}$ units
+- And if $\bm{x_{i,2}}$ increases by **one** unit, $\bm{y_i}$ increases by $\bm{\frac{\partial y_i}{\partial x_{i,2}} = \hat{\beta}_2 = 5}$ units
+- Typically, we look at the change in one covariate at a time. All the other ones are held fixed ("ceteris paribus": Everything else being equal)
+- $\bm{ \hat{\beta}_1 }$ is the estimate of the marginal effect of $\bm{x_{i,1}}$ on $\bm{y_i}$ (analogously for $\bm{ \hat{\beta}_2 }$)
+- For an observation where $\bm{x_{i,1}=50}$ and $\bm{x_{i,2}=12}$, we predict that observation will have $\bm{\hat{y}_i = \hat{\beta}_0 + \hat{\beta}_1 \times 50 + \hat{\beta}_2 \times 12 = 2 + 3.5\times 50 + 5\times 12 = 237}$
+
+
+## Fitted values and residuals
+- $\bm{\hat{y}_i}$ are the predictions, i.e. the points on the regression "line" (a line with one covariate, a surface with two, a volume with three, etc...)
+- The residuals are defined as before: $\bm{\hat{u}_i = y_i - \hat{y}_i}$
+- $\bm{\hat{u}_i}$ is \textbf{not} an estimate of the error term $\bm{u_i}$ (which is a random variable, not a parameter to estimate). It is just what is left by the regression
+<!-- - Two important remarks about fitted values and residuals: -->
+    <!-- - Since $\bm{\hat{\beta}_0= \bar{y} - \hat{\beta}_1\bar{x}_1 - \hat{\beta}_2\bar{x}_2 - ... - \hat{\beta}_K\bar{x}_K}$, $\bm{ \bar{y} = \hat{\beta}_0 +  \hat{\beta}_1\bar{x}_1 +  \hat{\beta}_2\bar{x}_2 +...+\hat{\beta}_K\bar{x}_K}$ and we have $\bm{ \bar{\hat{y}} =  \hat{\beta}_0 + \hat{\beta}_1\bar{x}_1 + \hat{\beta}_2\bar{x}_2 +...+\hat{\beta}_K\bar{x}_K= \bar{y} }$: The regression line goes through the mean point $\bm{(\bar{x}_1,\, \bar{x}_2,\, ...,\, \bar{x}_K,\, \bar{y})}$ -->
+- The average value of the residuals is then 0: $\bm{\bar{\hat{u}} = \bar{y} -  \bar{\hat{y}} = \bar{y} -  \bar{y} = 0}$
+- So the average data point is **perfectly** predicted by the OLS estimator
+
+## Goodness-of-fit 
+\label{R2}
+
+- The \textbf{R-squared} is the proportion of the variance in $\bm{Y_i}$ that is explained by the model, i.e. by our $\bm{\hat{Y}_i}$. It can be expressed in terms of the $\bm{ESS}$ but we can also use the **Sum of squared residuals**, or $\bm{SSR}$:
+\[
+\bm{R^2 \equiv \frac{ESS}{TSS}  = \frac{\bm{\frac{1}{n}\sum_{i=1}^{n} \left( \hat{y}_i - \bar{y}  \right)^2}}{\bm{\frac{1}{n}\sum_{i=1}^{n} \left( y_i - \bar{y}  \right)^2}} =1 - \frac{SSR}{TSS} = 1 - \frac{\bm{\frac{1}{n}\sum_{i=1}^{n} \hat{u}_i ^2}}{\bm{\frac{1}{n}\sum_{i=1}^{n} \left( y_i - \bar{y}  \right)^2}}  }
+\]
+where $\bm{\bar{y}}$ is the sample mean of $\bm{y_i}$
+- The **adjusted R-squared**, denoted $\bm{\bar{R}^2}$, is a modified version of the $\bm{R^2}$:
+\[
+\bm{\bar{R}^2 = 1 - \frac{SSR/(n-K-1)}{TSS/(n-1)}}
+\]
+
+- Idea: Adding more variables for a given $\bm{n}$ increases $\bm{R^2}$, although too many variables is not good either. $\bm{\bar{R}^2}$ might increase when $\bm{K}$ increases, but **not** if the extra variables are irrelevant
+
+
+<!-- <!-- ## Goodness-of-fit and overfitting --> 
+<!-- <!-- - BUT! $\bm{R^2 = 1}$ is \textbf{not desirable}: this is \textbf{overfitting} --> 
+<!-- <!-- - Any model can predict the data used to estimate the model. Add more variables and $\bm{R^2}$ mechanically increases, \textbf{even if the additional variables are irrelevant} --> 
+<!-- <!-- - But do we care about predicting data we observe? --> 
+<!-- <!-- - We want to take the model to build predictions of \textbf{data we do not observe} --> 
+<!-- <!-- - So we need a way to test how well our model performs \textbf{out-of-sample} --> 
+<!-- <!-- - More on this in the \textbf{model selection} lecture --> 
+
+##
+\begin{center} \label{properties}
+\LARGE{ \textbf{ Properties of the OLS estimator } }
+\end{center}
+
+## Properties of the OLS estimator
+- By computing the $\bm{\hat{\beta}}$ coefficients, we hope to learn some thing about the true $\bm{\beta}$
+- Like other estimators (sample average/proportion, corrected sample variance), it is relevant to ask whether the OLS estimator is consistent, biased, and asymptotically normal
+- The assumptions made previously will be crucial in determining these properties
+- Let $\bm{\hat{\beta}_{OLS} = (\hat{\beta}_0,\, \hat{\beta}_1,...,  \hat{\beta}_K)}$ and let $\bm{\beta = (\beta_0,\, \beta_1,..., \beta_K)}$
+
+## OLS estimator properties: Consistency
+\begin{thm}[: Consistency of the OLS estimator]\label{consistency}
+If Assumptions \textbf{\ref{linearity}}, \textbf{\ref{iid}}, \textbf{\ref{exo}} and \textbf{\ref{full_rank}} are satisfied, then:
+\[
+\bm{{\hat{\beta}_{OLS} \overset{\mathbb{P}}{\rightarrow}  \beta}}
+\]
+where $\bm{{\overset{\mathbb{P}}{\rightarrow}}}$ denotes convergence in probability, i.e. $\bm{\forall \varepsilon>0}$, $\bm{\mathbb{P}\left( |\hat{\beta}_{OLS} - \beta| > \varepsilon  \right) \rightarrow 0}$ as $\bm{n \rightarrow \infty}$ 
+\end{thm}
+
+
+## OLS estimator properties: Unbiasedness
+
+\begin{thm}[: Unbiasedness of the OLS estimator\label{Unbiasedness}]
+If Assumptions \textbf{\ref{linearity}}, \textbf{\ref{iid}}, \textbf{\ref{exo}} and \textbf{\ref{full_rank}} are satisfied, then the OLS estimator is \textbf{unbiased}, i.e.:
+\[
+\bm{\mathbb{E}[\hat{\beta}_{OLS} ]= \beta}
+\]
+\end{thm}
+
+- Assumption \textbf{\ref{exo}} is particularly important for that property
+- Idea: Compute $\bm{\mathbb{E}[\hat{\beta}_{OLS} | X = x] }$, then take the expectation of it again to get $\bm{\mathbb{E}[\hat{\beta}_{OLS} ]  }$ by the law of iterated expectations
+- We will later cover the case where Assumption \textbf{\ref{exo}} is not satisfied, in which case $\bm{\hat{\beta}_{OLS}}$ is \textbf{biased} and \textbf{inconsistent}
+
+
+## OLS estimator properties: Asymptotic normality
+- Recall that we have 
+\[
+\bm{\hat{ \beta}_{OLS} - \beta = (X^{\prime}X)^{-1}X^{\prime}U}
+\]
+\begin{thm}[: Asymptotic normality of the OLS estimator\label{asymptotic normality}]
+If Assumptions \textbf{\ref{linearity}}, \textbf{\ref{iid}}, \textbf{\ref{exo}}, \textbf{\ref{full_rank}} and \textbf{\ref{homo}} are satisfied, then:
+\[
+\bm{{\sqrt{n} \left( \hat{\beta}_{OLS} - \beta \right) \overset{d}{\rightarrow} \mathcal{N}\left( 0,\, \sigma^2 (\mathbb{E}[X_iX_i^{\prime}])^{-1}  \right)}}
+\]
+where $\bm{{\overset{d}{\rightarrow}}}$ refers to convergence in distribution.
+\end{thm}
+
+- Theorem \textbf{\ref{asymptotic normality}} is an application of the \textbf{Central Limit Theorem} on the right hand side of the expression above
+- $\bm{(\mathbb{E}[X_iX_i^{\prime}])^{-1}}$ is a $\bm{[(K+1)\times (K+1)]}$ matrix
+
+## Best Linear Unbiased Estimator
+\begin{thm}[: B.L.U.E.\label{blue}]
+If Assumptions If Assumptions \textbf{\ref{linearity}}, \textbf{\ref{iid}}, \textbf{\ref{exo}}, \textbf{\ref{full_rank}} and \textbf{\ref{homo}}  are satisfied, then the OLS estimator is the \textbf{Best Linear Unbiased Estimator (BLUE)}, in the sense that its variance is the smallest possible variance a linear unbiased estimator can achieve, i.e.:
+\[
+\bm{{   \mathbb{V}[\hat{\beta}_{OLS}] \leq \mathbb{V}[\tilde{\beta}]    }}
+\]
+where $\bm{\tilde{\beta}}$ is any other linear unbiased estimator.
+\end{thm}
+
+## 
+\begin{center} \label{inference} 
+\LARGE{ \textbf{ Inference and hypothesis testing } } 
+\end{center} 
+
+## Single hypothesis testing
+- We can test hypotheses about the value of $\bm{\beta_0,\beta_1,...,\beta_K}$ individually using the same procedure as before since we have the asymptotic distribution from the CLT: $\bm{\mathcal{N}\left( 0,\, \sigma^2 (\mathbb{E}[X_iX_i^{\prime}])^{-1}  \right)}$
+- Say, we want to test the hypothesis $\bm{\mathcal{H}_0}$: $\bm{\beta_1=  \beta_{\mathcal{H}_0}}$ vs $\bm{\mathcal{H}_1}$: $\bm{\beta_1 \neq  \beta_{\mathcal{H}_0}}$
+- But we first need to estimate $\bm{\sigma^2}$
+- It can be shown that the sum of squared residuals $\bm{\hat{\sigma}^2 = \frac{SSR}{n-K-1} = \frac{\sum_{i=1}^n \hat{u}^2_i}{n-K-1} }$ is a \textbf{consistent estimator} of $\bm{\sigma^2}$
+- The $\bm{n - K - 1}$ is coming from the fact that there are $\bm{K+1}$ estimated parameters and we need to divide by $\bm{n - (K + 1)}$ to get the Student distribution we get for sample means
+
+## Single hypothesis testing (cont'd)
+- For $\bm{(\mathbb{E}[X_iX_i^{\prime}])^{-1} }$, sample estimates for each element in the matrix will do (using $\bm{n-1}$ is not incorrect, but it makes little difference when $\bm{n}$ is large, and both estimators are consistent anyway)
+- For the variance of $\bm{\hat{\beta}_k}$, we need to look into the $\bm{k^{th}}$ diagonal element of $\bm{\left(\frac{1}{n}\sum_{i=1}^n x_ix_i^{\prime}\right)^{-1}}$
+- So under $\bm{\mathcal{H}_0}$, $\bm{ t = \sqrt{n} \frac{ \hat{\beta}_{k} - \beta_{\mathcal{H}_0} }{ \sqrt{\hat{\sigma}^2 \left(\frac{1}{n}\sum_{i=1}^n x_ix_i^{\prime}\right)_{k,k}^{-1} }    } \sim t_{n-K-1} }$
+- If the sample size is big enough (typically $\bm{n > 100}$), then $\bm{t_{n-K-1}}$ can be replaced by $\bm{\mathcal{N}(0,1)}$
+- As fancy as it looks, even if the bottom term has a matrix in it, we only look at the $\bm{k^{th}}$ diagonal element to compute the standard error of $\bm{\hat{\beta}_k}$
+
+## Single hypothesis testing (cont'd)
+- Typically, regressions results look like this
+\[
+\bm{{\hat{Y}_i = \underset{(se(\hat{\beta}_0))}{\hat{\beta}_0} + \underset{(se(\hat{\beta}_1))}{\hat{\beta}_1}X_{i,1} + \underset{(se(\hat{\beta}_2))}{\hat{\beta}_2}X_{i,2}  }}
+\]
+
+- The number in parentheses are the **standard errors**, i.e. the estimates of the standard deviations of the $\bm{\hat{\beta}}$
+- They correspond to the square root of the diagonal elements of $\bm{\hat{\sigma}^2(\frac{1}{n}\sum_{i=1}^n x_ix_i^{\prime})^{-1}}$
+- For instance:
+
+\[
+\bm{{\widehat{Wage}_i = \underset{(0.1)}{0.67} + \underset{(0.3)}{2.1}Age_{i} - \underset{(0.2)}{3.7}nkids_{i}}}
+\]
+
+## Single hypothesis testing
+- Let us test $\bm{\mathcal{H}_0}$: $\bm{\beta_1=  b}$ vs $\bm{\mathcal{H}_1}$: $\bm{\beta_1 \neq  b}$
+- The test statistic would be $$\bm{ t =  \frac{ \hat{\beta}_{1} - b }{ 0.3}} $$
+- If $\bm{b = 0}$, the test statistic would equal $\bm{7}$
+- The critical value will come from the Normal distribution is the sample size is large enough ($\bm{n>100}$) or the Student distribution otherwise (with $\bm{n-K-1}$ degrees of freedom)
+- For a $\bm{5\%}$ level test, the critical value from the normal distribution is $\bm{1.96}$
+- The p-value will follow from looking at the probability of observing a higher number than the test statistic using the appropriate distribution
+
+## Joint hypothesis testing: The F-test
+- What if we want to test 2 or more hypotheses at the same time?
+- Example: $\bm{\beta_0 = 5}$ **and** $\bm{\beta_3 = 12}$
+- We need a **joint hypotheses** test
+- The **F-test** is used to test several hypotheses at the same time
+- It consists in comparing two regressions: One with all the variables of interest (the **unrestricted model**), and one where plug the $\bm{\mathcal{H}_0}$ values and estimate the betas that don't appear in $\bm{\mathcal{H}_0}$ (the **restricted model**)
+- Not covered in this course
+
+## 
+\begin{center}  \label{illustration}
+\LARGE{ \textbf{Illustration in \textbf{\textsf{RStudio}} } } 
+\end{center} 
+
+## Do Fast-Food Chains Price Discriminate on the Race and Income Characteristics of an Area? (1997) 
+- Kathryn Graddy studied the impact of the proportion of black people in an area on the price of fast food items 
+- Idea: KFC restaurants serve the same items everywhere, but not always at the same price. Why?
+    - Is it a reflection of the costs associated to serving in one area vs another?
+    - Is it due to the composition of the demand? (Rich vs poor households? Black vs white customers)
+- In order to answer the question, she used data on item prices from fast food stores across different areas, and regressed these prices on population related variables as well as other economic indicators: Proportion of black people in the area, average income in the area, housing prices in the area, etc
+
+## Graddy (1997)  
+\scriptsize
+\tiny
+```{r, echo = FALSE}
+data(discrim)
+```
+
+```{r}
+model <- lm(pfries ~ prpblck + lincome + prppov + BK + KFC, data = discrim)
+summary(model)
+```
+
+## Graddy (1997)
+- The results above suggests that an increase in the black population in the area of the restaurant leads to an increase in the price of fries in a fast food!
+- The proportion of black people is a number between 0 and 1, so looking at a 1 unit increase does not make sense
+- A $\bm{0.5}$ increase in the proportion of black people in the area leads to a $\bm{0.5 \times  0.08368= \$0.04184}$ increase in the price of fries)
+- Interesting. And results are similar for the price of sodas and of a meal overall. What could explain that?
+
+## Graddy (1997)  
+- We can easily make predictions by extracting the $\bm{\hat{\beta}}$'s 
+\scriptsize
+```{r}
+beta_hats <- model$coefficients   # Extracts the beta hats in a vector
+# Set some values for the X's
+p_black <- 0.1
+linc <- 10
+prppov <- 0.05
+BK <- 1
+KFC <- 0
+x <- c(1, p_black, linc, prppov, BK, KFC)
+pred <- sum(x*beta_hats)
+pred <-   beta_hats[1] + beta_hats[2]*p_black+
+          beta_hats[3]*linc + beta_hats[4]*prppov+ 
+          beta_hats[5]*BK + beta_hats[6]*KFC
+```
+
+## Graddy (1997)  
+- We can easily make predictions by extracting the $\bm{\hat{\beta}}$'s 
+\scriptsize
+```{r}
+pred
+```
+
+## Graddy (1997)
+- It could be pure discrimination, yes. Some stores would want to charge black people more for that reason
+- Do black people have a more inelastic demand for fast foods than other people? 
+- What are the characteristics of these neighborhoods vs other neighborhoods?
+- It could also be due to factors that were not measured and correlated with the proportion of black people
+- These factors are inside the error term, and will result in a violation of Assumption \textbf{\ref{exo}}
+
+## 
+\begin{center}  \label{vio}
+\LARGE{ \textbf{Violation of assumptions } } 
+\end{center} 
+
+## Linear model assumption 1: Linearity
+\label{ass 1}
+
+-   Assumption \textbf{\ref{linearity}} imposes linearity of the model: $\bm{Y_{i}=X_{i}^{\prime}\beta+ u_{i}}$
+-   Linearity in the parameters $\bm{\beta_0}$, not in $\bm{X_i}$
+-   Example: $\bm{Y_{i}=\beta_{0} + \beta_{1}X_{i,1} + \beta_{2}X_{i,1}^2 + u_{i}}$ is a linear model
+-   Example: $\bm{Y_{i}=(X_{i}^{\prime}\beta_{0})^2 + u_{i}}$ is \textbf{not} a linear model as it is not linear in $\bm{\beta_0}$
+-   Exact linearity never really exists, but approximate linearity is enough. Visualize data to justify this assumption
+
+## Illustration in \textbf{\textsf{R}}: nonlinearities
+
+```{r, results = "hide"}
+n <- 500              # sample size
+x1 <- rnorm(n)          # "draw" n numbers from a normal distribution
+x2 <- log(x1^2)
+y <-  x2 + rnorm(n)
+data <- data.frame(y, x1, x2)
+```
+
+## Illustration in \textbf{\textsf{R}}: nonlinearities
+- If we regress $\bm{Y_i}$ on $\bm{X_{i,1}}$:
+
+\begin{center}
+```{r, echo = FALSE, out.width = '65%', message = FALSE}
+fitted_ols <- lm(y ~ x1)$fitted
+data <- data.frame(y, x1, x2, fitted_ols)
+
+ggplot(data = data) +
+  geom_point(mapping = aes(x = x1, y = y)) +
+  geom_line(mapping = aes(x = x1, y = fitted_ols), colour = "chartreuse4", size = 1) +
+  # geom_smooth(aes(x = x1, y = y), method = lm)+
+  xlab(TeX("$X_{i,1}$"))+
+   ylab(TeX("$Y_i$")) +
+    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+\end{center}
+
+## Illustration in \textbf{\textsf{R}}: nonlinearities
+- Instead, regress $\bm{Y_i}$ on $\bm{\ln(X_{i,1})}$:
+
+\begin{center}
+```{r, echo = FALSE, out.width = '65%', message = FALSE}
+lnx1 <- log(abs(x1))
+fitted_ln <- lm(y ~ lnx1)$fitted
+data <- data.frame(y, x1, x2, fitted_ln)
+
+ggplot(data = data) +
+  geom_point(mapping = aes(x = x1, y = y))+
+  geom_line(mapping = aes(x = x1, y = fitted_ln), colour = "turquoise4", size = 1) +
+  # geom_smooth(aes(x = x2, y = y), method = lm)+
+  xlab(TeX("$X_{i,1}$"))+
+   ylab(TeX("$Y_i$")) +
+    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+\end{center}
+
+## Illustration in \textbf{\textsf{R}}: nonlinearities
+- Instead, regress $\bm{Y_i}$ on polynomials of $\bm{X_{i,1}}$:
+
+\begin{center}
+```{r, echo = FALSE, out.width = '65%', message = FALSE}
+xsq <- x1^2
+x3 <- x1^3
+x4 <- x1^4
+x5 <- x1^5
+x6 <- x1^6
+x7 <- x1^7
+x8 <- x1^8
+x9 <- x1^9
+fitted_pol <- lm(y ~ x1 + xsq + x3 + x4 + x5 + x6 + x7 + x8 + x9 )$fitted
+
+data <- data.frame(y, x1, x2, fitted_pol)
+
+ggplot(data = data) +
+  geom_point(mapping = aes(x = x1, y = y))+
+  geom_line(mapping = aes(x = x1, y = fitted_pol), colour = "goldenrod3", size = 1)+
+  xlab(TeX("$X_{i,1}$"))+
+   ylab(TeX("$Y_i$")) +
+    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+\end{center}
+
+<!-- ## Illustration in \textbf{\textsf{R}}: nonlinearities -->
+<!-- - Instead, regress $\bm{Y_i}$ on $\bm{X_{i,1}}$ using a nonparametric method: -->
+
+<!-- \begin{center} -->
+<!-- ```{r, echo = FALSE, out.width = '65%', message = FALSE} -->
+<!-- b <- np::npregbw(xdat = x1, ydat = y) -->
+<!-- fitted_np <- np::npreg(bws = b)$mean -->
+<!-- data <- data.frame(y, x1, x2, fitted_np) -->
+
+<!-- ggplot(data = data) + -->
+<!--   geom_point(mapping = aes(x = x1, y = y))+ -->
+<!--   geom_line(mapping = aes(x = x1, y = fitted_np), colour = "orangered", size = 1)+ -->
+<!--   xlab(TeX("$X_{i,1}$"))+ -->
+<!--    ylab(TeX("$Y_i$")) + -->
+<!--     theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman -->
+<!--         axis.title.y = element_text(family = "serif"), -->
+<!--         legend.text = element_text(family = "serif"), -->
+<!--         legend.title = element_text(family = "serif")) -->
+<!-- ``` -->
+<!-- \end{center} -->
+
+## Illustration in \textbf{\textsf{R}}: nonlinearities
+
+<!-- # ```{r, echo = FALSE, message = FALSE, out.width = '70%'} -->
+<!-- # data <- data.frame(y, x1, x2, fitted_ols, fitted_ln, fitted_pol, fitted_np) -->
+<!-- # # Graph the predictions of each model against x -->
+<!-- #  ggplot(data = data, aes(x = x1)) + -->
+<!-- #    geom_point(aes(y = y))+ -->
+<!-- #    geom_line(aes(y = fitted_ols, color = "OLS"), size = 1 )+ -->
+<!-- #    geom_line(aes(y = fitted_ln, color = "log"), size = 1)+ -->
+<!-- #    geom_line(aes(y = fitted_pol, color = "poly"), size = 1)+ -->
+<!-- #    geom_line(aes(y = fitted_np, color = "np"), size = 1)+ -->
+<!-- #    -->
+<!-- #    # scale_color_discrete(labels = c("OLS", TeX("OLS on $log(X_{i,1})$"), TeX("Polynomials of $X_{i,1}$"), "Nonparametric")) + -->
+<!-- #    # labs(color = 'Model')+ -->
+<!-- #    scale_fill_discrete(name = "Model", labels = c("OLS", TeX("OLS on $log(X_{i,1})$"), TeX("Polynomials of $X_{i,1}$"), "Nonparametric")) + -->
+<!-- #     scale_fill_manual(values = c('OLS' = 'chartreuse4', -->
+<!-- #                                   'log' = 'turquoise4', -->
+<!-- #                                   'poly' = 'goldenrod3', -->
+<!-- #                                   'np' = 'orangered' -->
+<!-- #                                   )) + -->
+<!-- #    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman -->
+<!-- #          axis.title.y = element_text(family = "serif"), -->
+<!-- #          legend.text = element_text(family = "serif"), -->
+<!-- #          legend.title = element_text(family = "serif")  )+ -->
+<!-- #     xlab(TeX("$X_{i,1}$")) + -->
+<!-- #     ylab(TeX("$Y_{i}$"))  -->
+<!-- # ``` -->
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '70%'}
+data <- data.frame(y, x1, x2, fitted_ols, fitted_ln, fitted_pol)
+# Graph the predictions of each model against x
+ ggplot(data = data, aes(x = x1)) +
+   geom_point(aes(y = y), alpha = 0.7)+
+   geom_line(aes(y = fitted_ols, color = "OLS"), size = 1 )+
+   geom_line(aes(y = fitted_ln, color = "log"), size = 1)+
+   geom_line(aes(y = fitted_pol, color = "poly"), size = 1)+
+   # geom_line(aes(y = fitted_np, color = "np"), size = 1)+
+
+   # scale_color_discrete(labels = c("OLS", TeX("OLS on $log(X_{i,1})$"), TeX("Polynomials of $X_{i,1}$"), "Nonparametric")) +
+   labs(color = 'Model')+
+   # scale_colour_discrete(name = "Model", labels = c("OLS", TeX("OLS on $log(X_{i,1})$"), TeX("Polynomials of $X_{i,1}$"), "Nonparametric")) +
+       scale_color_manual( breaks = c( "log",
+                                       # "np",
+                                       "OLS",
+                                       "poly"),       # Put them in alphabetical order,it is easier for colours.
+                          labels = c(TeX("OLS on $ln(X_{i,1})$"), 
+                                     # "Nonparametric", 
+                                     "OLS",  TeX("Polynomials of $X_{i,1}$")),
+                          values = c('chartreuse4',
+                                  # 'turquoise4',
+                                  'goldenrod3',
+                                  'orangered'
+                                  )) +
+   theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+         axis.title.y = element_text(family = "serif"),
+         legend.text = element_text(family = "serif"),
+         legend.title = element_text(family = "serif")  )+
+    xlab(TeX("$X_{i,1}$")) +
+    ylab(TeX("$Y_{i}$"))
+```
+\end{center}
+
+## Linear model assumption 2: i.i.d sample
+\label{ass 2}
+
+-   Assumption \textbf{\ref{iid}} says the sample is composed of Independent and Identically Distributed (aka i.i.d.) observations $\bm{\{x_i, \, y_i\}, \, \, \, i=1,...,n}$
+is realistic if one knows the conditions under which the sample was obtained
+-   Without it, the OLS estimator might still be \textbf{consistent} and \textbf{unbiased}, but it requires more technical assumptions for laws of large numbers to apply
+
+## Linear model assumption 3: Exogeneity 
+\label{ass 3}
+
+-   Assumption \textbf{\ref{exo}} is about the conditional expectation of the error term: $\bm{\mathbb{E}[u_{i}|X_i]=0\, \, \, \, \, \forall i=1,...,n}$
+-   If not satisfied, it roughly means some $\bm{X_{i,j}}$ are somehow correlated with $\bm{u_i}$: These $\bm{X_{i,j}}$ are said to be \textbf{endogenous}, as opposed to \textbf{exogenous}
+-   It could happen for various reasons, among which \textbf{omitted variables} which are "buried" in the error term and correlated with $\bm{X_i}$
+-   Consequence: The OLS estimator is not \textbf{unbiased} anymore, nor it is \textbf{consistent}
+-   How do we estimate $\bm{\beta}$ in a reliable way then?
+
+## The Two Stage Least Squares (2SLS) estimator
+
+- Consider the following model:
+\[
+\bm{Y_i = \beta_0 + \beta_1 X_{i,1} + ... + \beta_K X_{i,K} + u_i}
+\]
+- Say $\bm{X_{i,1}}$ is **endogenous**, and all the other covariates are **exogenous** 
+- Estimating $\bm{\beta_0,\,\beta_2,...,\, \beta_K}$ consistently is doable via OLS
+- To get reliable estimates for $\bm{\beta_1}$, we need to satisfy Assumption \textbf{\ref{exo}} somehow
+- Consider a variable $\bm{Z_i}$ with the following two features:
+    -   $\bm{\mathbb{E}[u_i|Z_i]=0}$: $\bm{Z_i}$ is **exogenous**
+    -   $\bm{Z_i}$ is correlated with $\bm{X_{i,k}}$ but does not directly affect $\bm{Y_i}$: $\bm{Z_i}$ is **relevant**
+-   We can use $\bm{Z_i}$ to "represent" $\bm{X_{i,k}}$ while being exogenous. $\bm{Z_i}$ is called an **instrument**
+
+## The 2SLS estimator: First stage
+- In order to rid $\bm{X_{i,1}}$ of its endogeneity, consider the following regression:
+\[
+\bm{x_{i,1} = \pi_0 + \pi_1 z_{i} + \pi_2 x_{i,2} + ... + \pi_K x_{i,K} + v_i}
+\]
+
+- This model is called the **first stage equation**, or **reduced form equation**
+- Note: $\bm{X_{i,1}}$ is expressed as a combination of **exogenous** variables, so the source of the endogeneity of $\bm{X_{i,1}}$ comes from the correlation between the error terms $\bm{u_i}$ and $\bm{v_i}$
+- Thus $\bm{\mathbb{E}[v_i|Z_i,X_{i,2},...,X_{i,K}]=0}$ is naturally satisfied (they are exogenous for the first stage as well)
+- Estimating this model via OLS yields the predictions $\bm{\hat{x}_{i,1}}$ which are exogenous!
+
+## The 2SLS estimator: Second stage
+- Consider now the following regression equation:
+\[
+\bm{Y_i = \beta_0 + \beta_1 \hat{X}_{i,1} + ... + \beta_K X_{i,K} + u_i}
+\]
+
+- This model is called the **second stage equation**, or **structural form equation**
+- Estimate this model via OLS, and the estimates are **consistent** and **asymptotically normal**
+- However, they are **biased**. But for a big enough sample, the bias is negligible
+- The final estimates were obtained from estimating two stages, hence the name **Two Stage Least Squares (2SLS or TSLS)**
+
+## The 2SLS estimator: Procedure
+\begin{algorithm*}[The 2SLS estimator]
+
+\begin{itemize}
+\item Regress the endogenous variable on all the exogenous variables + instrument(s) via OLS. Get the predictions of the endogenous variable
+\item Regress the dependent variable $\bm{Y_i}$ on the predictions from the first stage + all the exogenous variables via OLS to obtain $\bm{\hat{\beta}_{2SLS}}$
+\end{itemize}
+
+\end{algorithm*}
+
+Remarks:
+
+- The 2SLS estimates will have higher standard errors than the OLS ones. Intuitively, it comes from adding extra variation due the inclusion of the first stage predictions
+- The $\bm{R^2}$ from a 2SLS estimation can be **negative** and thus difficult to interpret/use
+- The OLS estimate for the endogenous variable is typically biased in the direction of the correlation between the endogenous variable and the error term
+
+## Endogeneity: Illustration in \textbf{\textsf{R}} 
+\label{illus3}
+
+\scriptsize
+```{r, results = "hide"}
+n <- 100   # sample size
+z <- rnorm(n)
+u <- rnorm(n, mean = 0, sd = 1)  # generating the error term. Normal distribution here
+v <- rnorm(n, mean = 0, sd = 1)  # generating the error term. Normal distribution here
+x2 <- rnorm(n)    # An exogenous variable correlated with x1 but not the error term
+x1 <- z + u + 0.5*x2 + v    # X depends on z and x2 but also epsilon
+x2 <- rnorm(n)    # An exogenous variable correlated with x1 but not the error term
+beta_0 <- c(1, 2, 3)   # an intercept and a coefficient on x. 
+y <- cbind(1, x1, x2)%*%beta_0 + u  # here we are creating the dependent variable Y
+data <- data.frame(y, x1, x2, z)
+```
+
+## Endogeneity: Illustration in \textbf{\textsf{R}} (OLS in small sample)
+\scriptsize
+```{r}
+ols <- lm(y ~ x1 + x2) # Regression with an intercept
+summary(ols)
+```
+
+## Endogeneity: Illustration in \textbf{\textsf{R}} (OLS in big sample)
+\scriptsize
+```{r, echo = FALSE}
+n <- 10000   # sample size
+z <- rnorm(n)
+u <- rnorm(n, mean = 0, sd = 1)  # generating the error term. Normal distribution here
+v <- rnorm(n, mean = 0, sd = 1)  # generating the error term. Normal distribution here
+x2 <- rnorm(n)    # An exogenous variable correlated with x1 but not the error term
+x1 <- z + u + 0.5*x2 + v    # X depends on z and x2 but also epsilon
+x2 <- rnorm(n)    # An exogenous variable correlated with x1 but not the error term
+beta_0 <- c(1, 2, 3)   # an intercept and a coefficient on x. 
+y <- cbind(1, x1, x2)%*%beta_0 + u  # here we are creating the dependent variable Y
+data <- data.frame(y, x1, x2, z)
+ols <- lm(y ~ x1 + x2) # Regression with an intercept
+summary(ols)
+```
+
+## Endogeneity: Illustration in \textbf{\textsf{R}} (2SLS in 2 steps)
+\tiny
+```{r}
+stage_1 <- lm(x1 ~ x2 + z, data = data)
+x1_hat <- stage_1$fitted
+stage_2 <- lm(y ~ x1_hat + x2, data = data)
+summary(stage_2)
+```
+
+
+## Endogeneity: Illustration in \textbf{\textsf{R}} (2SLS in one step with ivreg)
+\scriptsize
+```{r, eval = FALSE}
+library(AER)
+```
+
+```{r, message = "hide"}
+tsls <- ivreg(y ~ x1 + x2 | z + x2, data = data)
+summary(tsls)
+```
+\normalsize
+
+## Linear model assumption 4: No collinearity 
+\label{ass 4}
+
+-   Assumption \textbf{\ref{full_rank}} says that no $\bm{X_{i,j}}$ can be expressed as a linear combination of the other $\bm{X_i}$'s
+-   If unsatisfied, it means two explanatory variables (or more) are linearly related: They are said to be \textbf{collinear}
+-   Example: $\bm{X_{i,1} = aX_{i,2} + bX_{i,3}}$
+-   Including $\bm{X_{i,1}}$, $\bm{X_{i,2}}$ and $\bm{X_{i,3}}$ in the same regression is redundant as $\bm{X_{i,2}}$ and $\bm{X_{i,3}}$ contain enough information for $\bm{X_{i,1}}$
+-   In practice: The software returns a numerical error (**perfect collinearity**), or standard errors are very big (**imperfect collinearity**)
+-   With many variables, collinearity is more likely. Be careful!
+
+## Multicollinearity: The dummy variable trap
+
+- Qualitative variables sometimes have more than 2 possible values: red/green/blue, white/black/asian,...
+- One might want to create a binary variable for each possible value and include them in the regression
+- Problem: The sum of these binary variables is always equal to 1! They are collinear
+- So if there are $\bm{p}$ different categories, include $\bm{p-1}$ binary variables!
+- The one not included in the default category, i.e the reference to which all the other binary variables compare
+
+## Multicollinearity: Polynomial regression
+- We saw how adding polynomial terms can help capture non linearities and improve predictions
+- One might want to add many polynomial terms to make sure they don't miss any curvature
+- Problem: As one adds polynomial terms, each extra term is close to being explained by a linear combination of the previous terms
+- So do not include too many terms! Use t-tests to check if the extra ones are relevant
+
+
+## Collinearity: Illustration in \textbf{\textsf{R}}
+
+
+```{r}
+n <- 100              # sample size
+x1 <- rnorm(n)          # "draw" n numbers from a normal distribution
+x2 <- rnorm(n)          # "draw" n numbers from a normal distribution
+x3 <- 0.5*x1 - 3*x2
+y <-  x1 + x2 + rnorm(n)
+data <- data.frame(y, x1, x2, x3)
+```
+
+## Collinearity: Illustration in \textbf{\textsf{R}}
+\vspace{0.1 cm}
+\scriptsize
+```{r}
+ols_123 <- lm(y ~ x1 + x2 + x3, data = data)
+summary(ols_123)
+```
+\vspace{-0.5 cm}
+
+## Collinearity: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r}
+ols_23 <- lm(y ~ x2 + x3, data = data)
+summary(ols_23)
+```
+
+## Collinearity: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r}
+ols_13 <- lm(y ~ x1 + x3, data = data)
+summary(ols_13)
+```
+
+## Collinearity: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r}
+ols_12 <- lm(y ~ x1 + x2, data = data)
+summary(ols_12)
+```
+
+## Detecting collinearity and fixing it
+
+There are many ways to detect multicollinearity. Some of them include:
+
+- Large changes in the estimated coefficients when adding or removing a covariate
+- Insignificant variables in a multivariate regression, but significant variables when estimating univariate regressions
+- Look at $\bm{R_k^2}$, the $\bm{R^2}$ from regressing $\bm{X_{i,k}}$ on all the other covariates and compute the **Variance Inflation Factor** $\bm{VIF_k = \frac{1}{1 - R_k^2}}$. If $\bm{VIF_k > 10}$ for some $\bm{k}$, there is a multicollinearity issue
+
+How to fix the problem? 
+
+- Drop some variables (careful which, as you might introduce an omitted variable bias)
+- Get more data: Collinearity is more likely is small samples, and bigger samples
+- Use alternative estimation methods: **Ridge regression**, **partial least squares**, **Principal Component Analysis** (more on them later)
+     
+## Linear model assumption 5: Homoskedasticity 
+\label{ass 5}
+
+- Assumption \textbf{\ref{homo}} imposes the same variance on the error term, i.e. the variance does not change with the values of the $\bm{X_{i,j}}$
+-   If unsatisfied, we then say that errors are \textbf{heteroskedastic}, as opposed to \textbf{homoskedastic}
+-   If the other assumptions are satisfied, the OLS estimator is still \textbf{consistent} and \textbf{unbiased}
+-   But the OLS estimator loses an appealing property: its variance is not the smallest possible one: It is not \textbf{BLUE} anymore
+-   Consequence: Confidence intervals produced by the OLS estimator are narrower than the true ones, leading to potentially incorrect conclusions
+-   What can we do?
+
+## Detecting heteroskedasticity
+\label{detect5}
+
+-   One can detect heteroskedasticity by plotting the residuals of an OLS estimation on the fitted values
+-   If there is no pattern in the variance of the residuals, then there is no evidence of heteroskedasticity
+-   If residuals display more variance for different values of the fitted values, chances are there is heteroskedasticity
+- Two hypotheses tests can be performed as well: Breusch-Pagan and White test
+
+## Homoskedasticity: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r, results = "hide"}
+n <- 200  # sample size
+x <- rnorm(n)  # generating the explanatory variable. Normal distribution here
+u <- rnorm(n)
+beta_0 <- c(1, 2)   # an intercept and a coefficient on x. 
+y <- cbind(1, x)%*%beta_0 + u  # here we are creating the dependent variable Y
+ols <- lm(y ~ x)
+fit <- ols$fitted
+resi <- ols$residuals
+data <- data.frame(y, x, fit, resi)
+```
+\normalsize
+
+## Homoskedasticity: Illustration in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, out.width = '70%'}
+ggplot(data = data)+
+  geom_point(aes(x = fit, y = resi), colour = "orangered")+
+  xlab("Fitted values")+
+  ylab("Residuals")+
+    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```   
+\end{center}
+
+
+## Detecting heteroskedasticity: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r, results = "hide"}
+n <- 200  # sample size
+x <- rnorm(n)  # generating the explanatory variable. Normal distribution here
+sigma <- 2
+u <- c()
+for(i in 1:n)
+{
+  u[i] <- rnorm(1, mean = 0, sd = sigma*x[i]^2)
+}
+beta_0 <- c(1, 2)   # an intercept and a coefficient on x. 
+y <- cbind(1, x)%*%beta_0 + u  # here we are creating the dependent variable Y
+ols <- lm(y ~ x)
+fit <- ols$fitted
+resi <- ols$residuals
+data <- data.frame(y, x, fit, resi)
+```
+\normalsize
+
+## Detecting heteroskedasticity: Illustration in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, out.width = '70%'}
+ggplot(data = data)+
+  geom_point(aes(x = fit, y = resi), colour = "orangered")+
+  xlab("Fitted values")+
+  ylab("Residuals")+
+    theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+\end{center}
+
+## Detecting heteroskedasticity with test statistics
+- Assumption **\ref{homo}** says that
+\[
+\bm{\mathbb{V}[u_i|X_i] =  \sigma^2}
+\]
+and remember that
+\[
+\bm{\mathbb{V}[u_i|X_i] = \mathbb{E}[u_i^2|X_i] - (\mathbb{E}[u_i|X_i])^2 = \mathbb{E}[u_i^2|X_i] }
+\]
+
+- We would like to test the null hypothesis $\bm{\mathcal{H}_0 : \, \mathbb{V}[u_i|X_i] =  \sigma^2}$
+
+- And the point of a regression is to estimate $\bm{\mathbb{E}[Y_i|X_i = x_i] = \beta_0 + \beta_1x_i}$
+- It suggests the following regression:\[
+\bm{u_i^2 = \delta_0 + \delta_1 X_{i,1} + ... +\delta_K X_{i,K}+ e_i}
+\]
+
+- We don't know $\bm{u_i^2}$... but we can get $\bm{\hat{u}_i^2}$, a kind of estimate!
+- That is the gist of the next two tests
+
+
+## Detecting heteroskedasticity: The Breusch-Pagan test
+\label{breusch}
+
+- If there is heteroskedasticity, the variance of the error term is a function of the covariates
+- We do not know the variance, but we have used residuals $\bm{\hat{u}_i^2}$ in the past to estimate it
+- The idea of the Breusch-Pagan test is to regress $\bm{\hat{u}_i^2}$ on the covariates, and test the joint significance of the regression
+- If we reject the null hypothesis, we have heteroskedasticity
+
+## Detecting heteroskedasticity: The Breusch-Pagan test  (cont'd)
+\begin{algorithm*}[Breusch-Pagan test (1970)]
+
+\begin{itemize}
+\item Estimate the model via OLS, get the residuals $\bm{\hat{u}_i}$
+\item Regress $\bm{\hat{u}_i^2}$ on $\bm{X_{i,1},\, ...,\, X_{i,K}}$
+\item Perform a F-test on all the covariates (5\% is a good default significance level)
+\item If the null is rejected, there is evidence of heteroskedasticity
+\end{itemize}
+
+\end{algorithm*}
+
+- Note: If we suspect the variance of $\bm{u_i}$ only depends on a subset of covariates, it is possible to only include the suspects in the regression
+
+## Detecting heteroskedasticity: The White test
+\label{white}
+
+- White suggested using the squares and the interactions of the covariates
+- If there are two covariates, include $\bm{X_{i,1}, \, X_{i,2}}$ but also $\bm{X_{i,1}^2, \, X_{i,2}^2}$ and $\bm{X_{i,1}X_{i,2}}$
+- If there are three covariates, there would be 9 terms!
+- It gets quickly out of hands, and eats degrees of freedom away...
+- But $\bm{\hat{y}_i}$ is itself a function of the covariates!
+
+## Detecting heteroskedasticity: The White test  (cont'd)
+- It suggests we can use $\bm{\hat{y}_i}$ and $\bm{\hat{y}_i^2}$ and check their significance:
+\[
+\bm{\hat{u}_i^2 = \alpha_0 + \alpha_1 \hat{y}_i +  \alpha_2 \hat{y}_i^2 + \varepsilon_i}
+\]
+
+- Way more tractable than using all these interaction terms!
+- It is a modified version of the test with interactions and imposes more restrictions, but is still useful
+
+
+## Detecting heteroskedasticity: The White test (cont'd)
+<!-- \begin{algorithm*}[White test (1980)] -->
+
+<!-- \begin{itemize} -->
+<!-- \item Estimate the model via OLS, get the residuals $\bm{\hat{u}_i}$ and the fitted values $\bm{\hat{y}_i}$ -->
+<!-- \item Regress $\bm{\hat{u}_i^2}$ on $\bm{\hat{y}_i}$ and $\bm{\hat{y}_i^2}$ -->
+<!-- \item Use a F-test to test the joint significance of $\bm{\hat{y}_i}$ and $\bm{\hat{y}_i^2}$ (5\% is a good default significance level) -->
+<!-- \item If the null is rejected, there is evidence of heteroskedasticity -->
+<!-- \end{itemize} -->
+
+<!-- \end{algorithm*} -->
+
+\begin{algorithm*}[White test (1980)]
+\begin{itemize}
+\item Estimate the model via OLS, get the residuals $\bm{\hat{u}_i}$ and the fitted values $\bm{\hat{y}_i}$
+\item Regress $\bm{\hat{u}_i^2}$ on $\bm{\hat{y}_i}$ and $\bm{\hat{y}_i^2}$
+\item Use a F-test to test the joint significance of $\bm{\hat{y}_i}$ and $\bm{\hat{y}_i^2}$ (5\% is a good default significance level)
+\item If the null is rejected, there is evidence of heteroskedasticity
+\end{itemize}
+\end{algorithm*}
+
+## Dealing with known heteroskedasticity
+\label{sol5}
+
+- To see how to fix the heteroskedasticity problem, consider the following univariate model:
+\[
+\bm{Y_i = \beta_0 + \beta_1 X_i + u_i }
+\]where Assumptions \textbf{\ref{linearity}}, \textbf{\ref{iid}}, \textbf{\ref{exo}} and \textbf{\ref{full_rank}} are satisfied
+
+- Assume $\bm{\mathbb{V}[u_i|x_i] = \sigma^2 f(x_i)}$
+- Note: This assumption means that the error terms are **independent** but **not identically distributed** as variances differ across $\bm{i}$
+- Say, we know what $\bm{f(X_i)}$ is. Divide both sides of the regression equation by $\bm{\sqrt{f(X_i)}}$ and define
+\[
+\bm{Y^*_i = \frac{Y_i}{\sqrt{f(X_i)}}, \,\, X^*_i = \frac{X_i}{\sqrt{f(X_i)}}, \,\, W^*_i = \frac{1}{\sqrt{f(X_i)}}, \,\, u^*_i = \frac{u_i}{\sqrt{f(X_i)}}   }
+\]
+
+- The last variable $\bm{W^*_i}$ is the intercept, **1**, divided by $\bm{\sqrt{f(X_i)}}$
+
+## Dealing with known heteroskedasticity (cont'd)
+- The transformed model is:
+\[
+\bm{Y^*_i = \beta_0 W^*_i + \beta_1 X^*_i + u^*_i }
+\]
+
+- Now: $\bm{\mathbb{V}[u^*_i|X_i] = \mathbb{V} \left[ \frac{u_i}{\sqrt{f(X_i)}}  |X_i \right] = \frac{1}{f(x_i)}\mathbb{V}[u_i|X_i] = \frac{1}{f(x_i)} \sigma^2 f(x_i) = \sigma^2}$
+- Back to homoskedasticity!!
+- Regress $\bm{Y^*_i}$ on $\bm{W^*_i}$ and $\bm{X^*_i}$ via OLS to get **consistent**, **unbiased** and **BLUE** estimates of $\bm{\beta_0}$ and $\bm{\beta_1}$
+- Note: You can add an intercept, but it will not be significant anyway
+- The resulting estimator is called the **Generalized Least Squares (GLS)** estimator
+
+## Dealing with known heteroskedasticity (cont'd)
+- In a multivariate context, the principle is the same: Divide everything by the standard deviation of $\bm{u_i}$
+- If error terms are correlated (for instance, in time series regressions where data are not i.i.d.), we need to take into account covariance terms
+- The variance of the error term vector is a matrix containing variances in the diagonal, and covariances off the diagonal (not covered in this course)
+- Because at the end of the day, it is an OLS on variables that were re-weighted, that particular GLS estimator is called **Weighted Least Squares (WLS)**
+
+## Dealing with unknown heteroskedasticity
+\label{gls}
+
+- What if we know there is heteroskedasticity, but we don't know the variance of the error term?
+- It is a more realistic case unfortunately...
+- Remember that
+\[
+\bm{\mathbb{V}[u_i|X_i] = \mathbb{E}[u_i^2|X_i] - (\mathbb{E}[u_i|X_i])^2 = \mathbb{E}[u_i^2|X_i] = \sigma^2(x_i)}
+\]
+
+- And the point of a regression is to estimate $\bm{\mathbb{E}[Y_i|X_i = x_i] = \beta_0 + \beta_1x_i}$
+- Using $\bm{\hat{u}_i^2}$ as the dependent variable (an "estimate" of $\bm{u_i^2}$), we can estimate $\bm{\mathbb{E}[u_i^2|X_i]}$
+- Thus, consider the following model:
+\[
+\bm{ \hat{u}_i^2 = \alpha_0 + \alpha_1 X_{i,1} + ... + \alpha_K X_{i,K} + \varepsilon_i       }
+\]
+
+## Dealing with unknown heteroskedasticity
+\[
+\bm{ \hat{u}_i^2 = \alpha_0 + \alpha_1 X_{i,1} + ... + \alpha_K X_{i,K} + \varepsilon_i       }
+\]
+
+- Note: we care about good prediction here, not about the interpretation of the estimated coefficients, so we don't have to worry about endogeneity issues
+- We can use the fitted values of this regression as an estimate of $\bm{\mathbb{E}[u_i|X_i]}$
+- Problem: The fitted values might be negative, so dividing all variables by its square root would not work...
+
+## Dealing with unknown heteroskedasticity (cont'd)
+- Instead, consider:
+\[
+\bm{\ln(\hat{u}_i^2) = \delta_0 + \delta_1 X_{i,1} + ... + \delta_K X_{i,K} + e_i }
+\]
+
+- From that regression, we can recover the fitted values for $\bm{\hat{u}_i^2}$ by taking the exponential, and an exponential is never negative!!
+- What if we pick the wrong functional form?
+- We want to predict well, so we want a **flexible** function, i.e. one that can approximate potential non linearities
+- So we can add polynomial terms! (as long as we don't have collinearity)
+
+## Dealing with unknown heteroskedasticity
+\begin{algorithm*}[Feasible Generalized Least Squares (FGLS)]
+
+\begin{itemize}
+\item Estimate the model via OLS, get the residuals $\bm{\hat{u}_i}$
+\item Regress $\bm{\ln(\hat{u}_i^2)}$ on $\bm{X_{i,1},\, ...,\, X_{i,K}}$ (and polynomial terms if desired), and get the fitted values $\bm{ \widehat{\ln(\hat{u}_i^2)}}$
+\item Get $\bm{\hat{\hat{u}}_i^2 = \exp (\widehat{\ln(\hat{u}_i^2)})}$
+\item Get $\bm{Y_i^*=Y_i/\sqrt{\hat{\hat{u}}_i^2}}$, $\bm{X_{i,1}^*=X_{i,1}/\sqrt{\hat{\hat{u}}_i^2}}$ etc
+\item Regress $\bm{Y_i^*}$ on the $\bm{X_i^*}$'s via OLS
+\end{itemize}
+
+\end{algorithm*}
+
+- Note 1: Careful with F-tests after FGLS! Use the same weights in both the unrestricted and restricted regressions
+- Note 2: If the functional form of the variance is not as the regression involving $\bm{\ln(\hat{u}_i^2)}$, the standard errors obtained at the end are no longer valid, but we can always use the heteroskedasticity-robust standard error (see next slides)
+
+## Feasible GLS (FGSL): Illustration in \textbf{\textsf{R}}
+<!-- With the polynomial terms -->
+```{r}
+# Step 1
+ols <- lm(y ~ x)
+resi <- ols$residuals
+resi2 <- resi^2
+l_resi2 <- log(resi2)
+# Adding With polynomial terms
+x2 <- x^2
+x3 <- x^3
+# Step 2
+res_model <- lm(l_resi2 ~ x + x2 + x3)
+# step 3
+res_fit <- exp(res_model$fitted)
+```
+
+## Feasible GLS (FGSL): Illustration in \textbf{\textsf{R}}
+\tiny
+```{r}
+# Step 4
+ystar <- y/sqrt(res_fit)
+xstar <- x/sqrt(res_fit)
+int <- 1/sqrt(res_fit)  # gotta transform the intercept too!
+# Step 5
+fgls_model <- lm(ystar ~  int + xstar)
+summary(fgls_model)
+```
+
+## Feasible GLS (FGSL): Illustration in \textbf{\textsf{R}}
+```{r}
+# Step 1
+ols <- lm(y ~ x)
+resi <- ols$residuals
+resi2 <- resi^2
+l_resi2 <- log(resi2)
+# FGLS With other flexible terms
+x2 <- sin(x)
+x3 <- cos(x)
+# Step 2
+res_model <- lm(l_resi2 ~ x + x2 + x3)
+# Step 3
+res_fit <- exp(res_model$fitted)
+```
+
+## Feasible GLS (FGSL): Illustration in \textbf{\textsf{R}}
+\tiny
+```{r}
+# Step 4
+ystar <- y/sqrt(res_fit)
+xstar <- x/sqrt(res_fit)
+int <- 1/sqrt(res_fit)  # gotta transform the intercept too!
+# Step 5
+fgls_model <- lm(ystar ~  int + xstar)
+summary(fgls_model)
+```
+
+## Dealing with unknown heteroskedasticity: Robust standard errors
+- Several methods can be used to deal with heteroskedasticity
+- One consists in doing a first regression to obtain weights used on the observations in a second OLS regression: It is called Generalized Least Squares, or GLS
+- Another alternative is to run OLS as usual (it is still unbiased and consistent after all), but to modify the formula for the variance of $\bm{\hat{\beta}}$ so that it takes heteroskedasticity into account
+- That formula is valid **whether** there is heteroskedasticity or not
+- This is why it is called the **heteroskedasticity-robust standard error**
+- Proposed by Eicker (1967), Huber (1967) and White (1980) separately, they also go by the names **Eicker–Huber–White** or **White** standard errors
+
+## Robust standard errors: Illustration in \textbf{\textsf{R}}
+- The ***sandwich*** package provides several formulas for different types of heteroskedasticity
+- The name of the package comes from the fact that in multivariate regressions, the variance-covariance matrix has a sandwich aspect: $\bm{\Gamma \Omega \Gamma^{\prime}}$ where each term is a matrix
+- Here, we need to use ***vcovHC()*** (in the brackets, one must put the estimated model. I called mine "ols")
+- Results are slightly different as there are additional adjustments with the package
+
+```{r, echo = FALSE}
+library(sandwich)
+```
+
+## Robust standard errors: Illustration in \textbf{\textsf{R}}
+\scriptsize
+```{r}
+# Homoskedastic case
+sqrt( sandwich::vcovHC(ols, type = "const") )
+
+# Heteroskedastic case
+# Heteroskedasticity-robust variance-covariance matrix
+sqrt( vcovHC(ols) )
+```
+
+## Summary
+- We learnt how linear regression works when there are multiple variables
+- As long as the assumptions are satisfied, we can make reliable estimates of the coefficients of interest $\bm{\beta}$
+- What about prediction? 
+- Do we actually need consistent and unbiased estimates $\bm{\hat{\beta}}$?
+- In fact, it is possible to improve prediction **by introducing bias**
+- So linear models are not so much used for prediction, although they are capable of producing some
+- They impose a rigid functional form for $\bm{f(X_{i,1},...,X_{i,K})}$ that will limit predictive power

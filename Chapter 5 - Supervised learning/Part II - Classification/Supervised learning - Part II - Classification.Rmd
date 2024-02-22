@@ -1,0 +1,566 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output: 
+  beamer_presentation: 
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+always_allow_html: true
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "rpart", "rpart.plot", "latex2exp", "MASS", "kernlab", "cheese", "FNN", "e1071")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+library(crimedata)
+library(fivethirtyeight)
+library(latex2exp)
+library(ISLR)
+library(stargazer)
+library(MASS)
+library(randomForest)
+library(kernlab)    # Plots nice SVMs
+library(cheese)   # Package that contains the heart data set
+# library(party)
+# library(tree)
+library(rpart)       # performing regression trees
+library(rpart.plot)  # plotting regression trees
+library(FNN)        # Nearest neighbour methods
+library(ROCR)         # For ROC curves to assess performance of classifiers
+library(e1071)        # contains some svm functions
+```
+
+
+## Disclaimer
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## Classification problems
+- When the variable of interest is qualitative, we attribute a number to each **attribute**, or **class**
+- Example: a Yes/No becomes a 1/0 variable
+- All fields involving data are interested in classification:
+    - Predicting victory/estimating victory odds given some characteristics in ports
+    - Predicting a disease given some symptoms
+    - Predicting default given some borrower's characteristics
+    - Predicting accidents for an individual buying insurance
+    - Predicting purchasing/clicking behavior given some browsing history to make suggestions (YouTube, Amazon) 
+
+## Classification problems
+- Estimation problems aim at estimating some parameters to look at the influence of a change in a variable on the dependent variable
+- Prediction problem aim at predicting whether an observation for which we observe $\bm{X_i}$ will fall in **class = 1** or **class = 0**
+- If $\bm{Y_i}$ is a binary variable, then $\bm{\mathbb{E}[Y_i | X_i] = 1\times \mathbb{P}(Y_i = 1|X_i) + 0\times \mathbb{P}(Y_1 = 0|X_i) = \mathbb{P}(Y_i = 1|X_i)}$
+- In words: Estimating the conditional expectation (i.e. predicting the average $\bm{Y_i}$ given $\bm{X_i}$) is the same as estimating the conditional probability that $\bm{Y_i = 1}$ given $\bm{X_i}$!
+
+## Outline
+    
+- \hyperlink{linear}{\textbf{Linear regression}}
+- \hyperlink{logistic}{\textbf{Logistic regression}}
+- \hyperlink{knn}{\textbf{K nearest neighbours}}
+- \hyperlink{classtrees}{\textbf{Classification trees}}
+- \hyperlink{svm}{\textbf{Support Vector Machines}}
+- Suggested reading: Chapter 4 and 9 in \href{https://www.statlearning.com/}{\textbf{ISLR}}
+
+##
+\begin{center}
+\LARGE{\textbf{Linear regression}} \label{linear}
+\end{center}
+
+## The linear probability model (LPM)
+- Why not consider a linear model?
+\[
+\bm{Y_i = \beta_0 + \beta_1 X_{i,1} +  \beta_2 X_{i,2} + \ldots + \beta_K X_{i,K} + u_i}
+\]
+where $\bm{Y_i}$ is a binary variable. Let $\bm{p(x_i)\equiv \mathbb{P}(Y_i = 1|X_i = x_i)}$
+- The OLS estimator can deliver estimates of the coefficients of interest and
+\[
+\bm{\hat{p}(x_i) = \hat{\beta}_0 + \hat{\beta}_1X_{i,1} + \ldots + \hat{\beta}_KX_{i,K}}
+\]
+
+- If one needs to make a clear prediction, it can be a 1 if $\bm{\hat{p}(x_i)>0.5}$ and a 0 if $\bm{\hat{p}(x_i)<0.5}$
+
+## The linear probability model (LPM)
+- That model has useful interpretations of the marginal effects of $\bm{x_{i,k}}$ on $\bm{p(x_i)}$: When $\bm{x_{i,k}}$ increases by one unit, $\bm{\hat{p}(x_i)}$ increases by $\bm{\hat{\beta}_k}$
+- But it has caveats
+    - Some predictions $\bm{\hat{p}(x_i)}$ can be lower than 0, or bigger than 1, which does not make sense
+    - LPM always feature **heteroskedasticity**: since $\bm{Y_i}$ is either equal to 1 or 0, it is a Bernoulli variable, for which the conditional variance is $\bm{\mathbb{V}(Y_i|X_i) = p(x_i)(1 - p(x_i))}$
+ and since $\bm{u_i = Y_i - \beta_0 - \beta_1 X_{i,1} -  \beta_2 X_{i,2} - \ldots - \beta_K X_{i,K}}$, then $\bm{\mathbb{V}[u_i|X_i]}$ depends on $\bm{X_i}$!!
+    - How to deal with more than two classes? Coding them 1, 2 and 3 would introduce an order to them which is not necessarily the case (e.g. red/blue/green, catholic/protestant/atheist, ...)
+
+
+## LPM in \textbf{\textsf{R}}
+- Consider the ***heart_disease*** data set
+- Each observation shows values for several covariates like cholesterol, gender, blood pressure,...
+- Each observation also reports whether an individual was subject to a heart disease or not
+- That is what we want to predict given an individual's characteristics
+- I split the sample in 2: The first one to run all the models, the second one to check the accuracy of the different predictions
+
+```{r, echo = FALSE}
+data(heart_disease)
+heart <- heart_disease
+
+heart <- heart %>% mutate(sex = ifelse(Sex == "Female", 1, 0)) %>%
+                   mutate(asymptomatic = ifelse(ChestPain == "Asymptomatic", 1, 0)) %>%
+                   mutate(typical_angina = ifelse(ChestPain == "Typical angina", 1, 0)) %>%
+                   mutate(atypical_angina = ifelse(ChestPain == "Atypical angina", 1, 0)) %>%
+                   mutate(non_anginal_pain = ifelse(ChestPain == "Non-anginal pain", 1, 0)) %>%
+                   mutate(blood_sugar = ifelse(BloodSugar == "TRUE", 1, 0)) %>%
+                   mutate(exercise_induced_angina = ifelse(ExerciseInducedAngina == "Yes", 1, 0)) %>%
+                   mutate(heart_disease = ifelse(HeartDisease == "Yes", 1, 0))
+
+train_index <- sample (1: nrow(heart), nrow(heart)/2)
+test_heart <- heart[- train_index, ]
+train_heart <- heart[train_index, ]
+
+```
+
+## LPM in \textbf{\textsf{R}}
+\small
+
+```{r}
+# LPM
+lpm <- lm(heart_disease ~ Age + sex + asymptomatic 
+          + typical_angina + atypical_angina + blood_sugar 
+          + exercise_induced_angina + MaximumHR + BP + Cholesterol, 
+          data = train_heart)
+lpm_predictions <- predict(lpm, newdata = test_heart, type = "response")
+# Making predictions based on the estimated probabilities
+lpm_predictions <- ifelse(lpm_predictions > 0.5, 1, 0)
+```
+
+## LPM in \textbf{\textsf{R}}
+\tiny
+
+```{r, echo = FALSE}
+# LPM
+summary(lpm)
+```
+
+##
+\begin{center}
+\LARGE{\textbf{Logistic regression}} \label{logistic}
+\end{center}
+
+## Logistic regression
+- Rather, one can assume a different functional form for $\bm{\mathbb{P}(Y_i = 1)}$ than linear so that predictions stay within range
+- A very popular one is the \textbf{logistic distribution}: $\bm{\mathbb{P}[X \leq x] = \frac{\exp(x)}{1+\exp(x)} = \frac{1}{1+\exp(-x)}}$ so that
+\[
+\bm{\mathbb{P}(Y_i=1|X_i=x_i) = p(x_i^{\prime}\beta) = F(x_i^{\prime}\beta) = \frac{1}{1+\exp(-x_i^{\prime}\beta)}}
+\]
+
+- Since we assume a full distribution, we are looking at a **parametric** model (the first one in the course)
+- It can be used both for estimation and prediction, and is also called **logit regression**
+
+## Logistic regression
+- Interpretation of the coefficients is not as straightforward as a linear regression, but nevertheless useful
+- A one unit increase in $\bm{X_{i,k}}$ leads to a change in $\bm{\mathbb{P}(Y_i=1|X_i=x_i)}$ in
+\[
+\bm{\frac{\partial F(x_i^{\prime}\hat{\beta})}{\partial x_{i,k}} = F^{\prime}(x_i^{\prime}\hat{\beta})\hat{\beta}_k = \frac{\exp(x_i^{\prime}\hat{\beta}))}{(1+\exp(x_i^{\prime}\hat{\beta}))^2}\hat{\beta}_k}
+\]
+
+
+## Logistic regression and maximum likelihood
+- The model can be estimated via \textbf{maximum likelihood}
+- Idea: Assume a distribution, and estimate its parameters by maximizing the likelihood that we observe these data under the distributional assumption
+- The probability that $\bm{Y_i}$ equals 1 can be written $\bm{p(x_i^{\prime}\beta)^{y_i}(1 - p(x_i^{\prime}\beta))^{1 - y_i}}$
+- If the sample is i.i.d., then the joint density of the $\bm{Y_i}$'s given the $\bm{X_i}$'s is
+\[
+\bm{\mathcal{L}(\beta|X) = \prod_{i=1}^n p(x_i^{\prime}\beta)^{y_i}(1 - p(x_i^{\prime}\beta))^{1 - y_i}}
+\]
+
+- For some, it will be $\bm{p(x_i^{\prime}\beta)}$ (if $\bm{y_i = 1}$), for others $\bm{1-p(x_i^{\prime}\beta)}$ (if $\bm{y_i = 0}$)
+
+## Maximum likelihood estimation (MLE)
+- Imagine I have a coin that I flip ten times, and got Heads 7 times, Tails 3 times
+- I **am not sure** it is a fair coin, i.e. a 50\% chance of Heads/Tails
+- I want to estimate the probability of landing on each side given my sample
+- Since the coin flips are independent of one another, the probability (or "likelihood") of observing the sample we have is
+\begin{align*}
+\bm{\mathcal{L}(p_H)} & \bm{= p_H \times p_H \times p_H \times p_H \times p_H \times p_H \times p_H } \\
+                      & \bm{\times (1-p_H) \times (1-p_H) \times (1-p_H) = p_H^7 (1-p_H)^3}
+\end{align*}
+where $\bm{p_H}$ is the probability of getting Heads
+- We want to find $\bm{\hat{p}_H}$ that maximizes the probability of observing that sample: **Maximum likelihood**
+- Spoiler: $\bm{\hat{p}_H = 7/10}$
+
+## Maximum likelihood
+- Note that in a linear model, assuming the error terms follow a normal distribution lead to maximum likelihood estimates that are the same as the OLS estimates for the $\bm{\hat{\beta}}$'s and $\bm{\hat{\sigma}^2}$!!
+- Maximum likelihood estimators are very popular, in particular when the data strongly suggest some distributions
+- They are **consistent** and **asymptotically normal**, so inference is relatively straightforward
+- But they impose strong parametric assumptions, which is not always desirable
+- Some alternatives exist: The pseudo-likelihood estimator uses kernels
+
+
+## Logistic regression in \textbf{\textsf{R}}
+- The ***glm*** function from the ***MASS*** library estimates logit models among others
+- Give it the formula as with ***lm***, the data set, and the "family" of models (here, it is "binomial")
+- One can use ***summary*** as with ***lm***, and get the fitted values
+- Here, I use the ***predict*** function to get the predictions on the second part of the data set
+
+## Logistic regression in \textbf{\textsf{R}}
+\small
+
+```{r}
+# Logistic regression
+logit_model <- glm(heart_disease ~ Age + sex + asymptomatic 
+                   + typical_angina + atypical_angina + blood_sugar 
+                   + exercise_induced_angina + MaximumHR + BP + Cholesterol, 
+                     data = train_heart, family = "binomial")
+# Predict test data based on model
+logit_predictions <- predict(logit_model, newdata = test_heart, 
+                             type = "response")
+logit_predictions <- ifelse(logit_predictions > 0.5, 1, 0)
+```
+
+## Logistic regression in \textbf{\textsf{R}}
+\tiny
+
+```{r, echo = FALSE}
+# Logistic regression
+summary(logit_model)
+```
+
+##
+\begin{center}
+\LARGE{\textbf{K nearest neighbours}} \label{knn}
+\end{center}
+
+## K-nn for classification
+- Nearest neighbours methods choose a number of close observations to the one we try to predict, and compute an average of the dependent variable $\bm{y_i}$ for these neighbours
+- What about classification?
+- The estimator is still the average of the $\bm{y_i,\, i \in \mathcal{N}_0}$
+- If $\bm{\sum_{i \in \mathcal{N}_0}y_i > 0.5}$, then we predict $\bm{\hat{y}_0} = 1$
+
+## K-nn for classification in \textbf{\textsf{R}}
+```{r}
+# K-nn
+knn_est <- gknn(heart_disease ~ Age + sex + asymptomatic 
+                   + typical_angina + atypical_angina + blood_sugar 
+                   + exercise_induced_angina + MaximumHR + BP 
+                   + Cholesterol, 
+                     data = train_heart,  k = 10 )
+
+# Predict test data based on model
+knn_predictions <- predict(knn_est, newdata = test_heart, 
+                           type = "prob")
+knn_predictions <- ifelse(knn_predictions > 0.5, 1, 0)
+```
+
+##
+\begin{center}
+\LARGE{\textbf{Classification trees}} \label{classtrees}
+\end{center}
+
+## Classification trees
+- Similar to regression trees, but the dependent variable belongs to **classes** (Example: 1 for a "Yes", 0 for a "No" or 1 for option 1, 2 for option 2,...)
+- Helps predict someone's decision based on her characteristics
+- Example: predict purchasing behavior based on browsing history (Amazon...)
+- Algorithm: similar to regression trees, but the function to minimize at each split is not the same
+- Let $\bm{\hat{p}_{m,k}}$ be the proportion of observations from class $\bm{k}$ in leaf $\bm{m}$
+- The prediction for an individual in leaf $\bm{m}$ will be the class that is the most occurring
+- Example: An observation ending up in a terminal node where "Yes" is the majority will get the prediction "Yes"
+
+## Classification trees
+- Consider the following criterion called \textbf{entropy}:
+\[
+\bm{{E_m \equiv -\sum_{k=1}^{K}\hat{p}_{m,k}\log \left( \hat{p}_{m,k} \right)}}
+\]
+
+- Another criterion is the \textbf{Gini index}:
+\[
+\bm{G_m \equiv \sum_{k=1}^{K} \hat{p}_{m,k} \left( 1 - \hat{p}_{m,k} \right)}
+\]
+- Both criteria are positive (or 0)
+- When $\bm{\hat{p}_{m,k}}$ are all near 0 (or 1), both criteria will be close to 0
+- The more "pure" the node is (i.e. the more it contains the same class), the lower the criteria. Classification trees minimize one of these criteria at each split
+
+
+## Classification trees in \textbf{\textsf{R}}
+\small
+```{r}
+# Classification tree
+tree_est <- rpart(heart_disease ~ Age + sex + asymptomatic 
+                  + typical_angina + atypical_angina + blood_sugar 
+                  + exercise_induced_angina + MaximumHR + BP + Cholesterol, 
+                  data = train_heart, cp = .02, method = "class")
+# rpart.plot(tree_est)
+tree_predictions <- predict(tree_est, newdata = test_heart, type = "class")
+# tree_predictions <- ifelse(tree_predictions > 0.5, 1, 0)
+```
+
+## Classification trees in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, out.width = '70%'}
+rpart.plot(tree_est)
+```
+\end{center}
+
+## Random forests for classification in \textbf{\textsf{R}}
+- If we can grow trees for classification, we can grow random forests
+- Each observation ends up in one leaf of each tree, where a prediction is made
+- The forest then takes the decision that appears the most among all the trees as the prediction. Example: Out of 500 trees, if 300 trees predict a 1 and 200 predict a 0 for an observation, the final prediction for that observation is a 1
+- Equivalently, the final prediction is 1 if $\bm{\hat{p}(x_i) > 0.5}$, 0 if $\bm{\hat{p}(x_i) < 0.5}$ (for ties, \textbf{\textsf{R}} typically randomly chooses a class)
+
+## Random forests for classification in \textbf{\textsf{R}}
+\small
+```{r, warning = FALSE}
+# Random forest
+rf_est <- randomForest(heart_disease ~ Age + sex + asymptomatic 
+                  + typical_angina + atypical_angina + blood_sugar 
+                  + exercise_induced_angina + MaximumHR + BP + Cholesterol, 
+                  data = train_heart)
+rf_pred <- predict(rf_est, newdata = test_heart)
+rf_predictions <- ifelse(rf_pred > 0.5, 1, 0)
+```
+
+##
+\begin{center}
+\LARGE{\textbf{Support vector machines (SVM)}} \label{svm}
+\end{center}
+
+## Classification: Support vector machines (SVM)
+- SVMs are used for classification problems
+- Idea: cut the data with **hyperplanes**
+- In a $\bm{p}$-dimensional space, a **hyperplane** is an affine ($\simeq$ linear) subspace of dimension $\bm{p-1}$
+- In a two-dimensional space (i.e. a surface), a hyperplane is a one-dimensional space (i.e. a line) that separates the surface into two halves
+- In a three-dimensional space, a hyperplane is a two-dimensional space (i.e. a surface, like a flat wall) that separates the space into two halves
+- Each plane contains one class, and any observation in a plane gets the corresponding class as a prediction
+
+## SVMs: Maximal margin classifier
+- How to choose the best hyperplane?
+- We want the hyperplane to be as far as possible from the observations
+- Compute the (perpendicular) distance between the observations and the hyperplane
+- The smallest of these distances is called the **margin**
+- The **Maximal margin classifier** finds the hyperplane that maximizes the **margin**
+- The vector representing the distance between the hyperplane and the closest point to it is called the **support vector**
+
+## SVMs: Soft margins
+- What if a **separating hyperplane** can't be found? As in, no hyperplane separates observations into two halves with one class in each?
+- We can use a **soft margin**, i.e. we can allow some observations to be on the wrong side of the hyperplane or margin
+- The minimization problem is modified by introducing **slack** variables, i.e. some variables that allow observations to be on the other side of the hyperplane containing their class
+
+## Nonlinear boundaries and the support vector machine
+- What if the boundary between classes is better not be linear?
+- One could include polynomials of the covariates: $\bm{X_{i,1}^2}$, $\bm{X_{i,2}^2}$ etc
+- The extension of that method is what we refer to as the **support vector machine**
+- The problem of maximization of the margin needs to include other measures of similarity between observations
+- **kernels** are functions that quantify such similarity differently
+- Using a specific kernel will produce different boundaries
+
+## SVMs: linear boundaries in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '70%'}
+library(e1071)
+set.seed (1)
+x <- matrix (rnorm (20*2) , ncol =2)
+y <- c(rep (-1,10) , rep (1 ,10) )
+x[y == 1 , ] = x[y == 1, ] + 1
+dat <- data.frame(x = x, y = as.factor (y))
+
+
+ggplot(data = dat)+
+geom_point(aes(x = x.2, y = x.1, color = y, shape = y), size = 3)+
+    xlab( TeX('$X_2$') ) +
+  ylab( TeX('$X_1$' )) +
+    theme(legend.position = "none")+
+  labs(colour = TeX( '$Y$' )) +
+  theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+
+# plot(x, col =(3-y))
+```
+\end{center}
+
+
+## SVMs: linear boundaries in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '70%'}
+svmfit <- svm(y ~., data = dat , kernel = "linear", cost = 0.1, scale = TRUE )
+# summary(svmfit)
+plot(svmfit , data = dat)
+
+# Fit radial-based SVM in kernlab
+# kernfit <- ksvm( y ~., data = dat, type = "C-svc", kernel = 'vanilladot', C = .1, scaled = c())
+# Plot training data
+# plot(kernfit, data = dat)
+# summary(svmfit)
+```
+\end{center}
+
+
+## SVMs: Nonlinear boundaries in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '70%'}
+set.seed (1)
+x <- matrix (rnorm (200*2) , ncol = 2)
+x[1:100 , ] <- x[1:100 , ]+2
+x[101:150 , ] <- x[101:150 , ] -2
+y <- c(rep (1, 150) , rep (2, 50) )
+dat <- data.frame(x = x, y = as.factor(y))
+#Plotting the data makes it clear that the class boundary is indeed nonlinear:
+ggplot(data = dat)+
+geom_point(aes(x = x.2, y = x.1, color = y, shape = y), size = 2)+
+    xlab( TeX('$X_2$') ) +
+  ylab( TeX('$X_1$' )) +
+    theme(legend.position = "none")+
+  labs(colour = TeX( '$Y$' )) +
+  theme(axis.title.x = element_text(family = "serif"),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif"),
+        legend.text = element_text(family = "serif"),
+        legend.title = element_text(family = "serif"))
+```
+\end{center}
+
+## SVMs: Nonlinear boundaries in \textbf{\textsf{R}}
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '70%'}
+# The data is randomly split into training and testing groups. We then fit
+# the training data using the svm() function with a radial kernel and γ = 1:
+train <- sample (200 ,100)
+# svmfit <- svm(y∼., data=dat [train ,], kernel ="radial", gamma =1, cost =1)
+# Fit radial-based SVM in kernlab
+kernfit <- ksvm(y ~., data = dat[train ,], type = "C-svc", kernel = 'rbfdot', C = 1)
+# Plot training data
+plot(kernfit, data = dat)
+# plot(svmfit , dat[train ,])
+```
+\end{center}
+
+## SVMs in \textbf{\textsf{R}}: Heart Disease data
+\scriptsize
+```{r}
+# Support vector machine
+svm_est <- svm(heart_disease ~ Age + sex + asymptomatic 
+               + typical_angina + atypical_angina 
+               + blood_sugar + exercise_induced_angina 
+               + MaximumHR + BP + Cholesterol, data = train_heart,
+               kernel = 'linear', cost = 1, gamma = 1, 
+               decision.values = TRUE, scale = FALSE) 
+
+tune.out <- tune(svm, heart_disease ~ Age + sex + asymptomatic 
+                 + typical_angina + atypical_angina + blood_sugar 
+                 + exercise_induced_angina + MaximumHR + BP + Cholesterol,
+                 data = train_heart, kernel = "radial", ranges = list (
+cost = c (0.1 , 1 , 10 , 100 , 1000) ,
+gamma = c (0.5 , 1 , 2 , 3 , 4)
+))
+# summary(tune.out)
+
+svm_predictions <- predict(tune.out$best.model, newdata = test_heart)
+svm_predictions <- ifelse(svm_predictions > 0.5, 1, 0)
+```
+
+
+## SVMs: Multiple classes
+- How do we apply SVMs when there are more than 2 classes?
+- The extension is not straightforward, and the two most popular are:
+    - ***One-versus-one***: Many SVMs are built, each comparing a pair of classes. We then assign a test observation to the class it was assigned the most often in each of the comparisons
+    - ***One-versus-all***: We fit a SVM for each class vs all the other classes (e.g. class 1 vs all the other classes), and assign a test observation to the class where its distance from the boundary is the largest
+    
+## Performance across methods
+
+\centering
+```{r, echo = FALSE}
+
+confusion_matrix <- function(depvar, preds, depvar_name, method_name)
+{
+tab <- data.frame(table (depvar, preds))
+colnames(tab) <- c(depvar_name, "Predictions", method_name)
+return(tab)
+}
+
+# Matthews Correlation Coefficient
+MCC <- function(depvar, predictions, depvar_name, method_name )
+{
+  conf_mat <- confusion_matrix(depvar = depvar, preds = predictions, depvar_name = depvar_name, method_name = method_name)
+  
+  TN <- conf_mat[1, method_name]# True negative
+  FP <- conf_mat[2, method_name]# False positive
+  FN <- conf_mat[3, method_name]# False negative  
+  TP <- conf_mat[4, method_name]# True positive
+
+  MCC <- (TP*TN - FP*FN)/(sqrt( (TP + FP)*(TP + FN)*(TN + FP)*(TN + FN)) ) # Matthews correlation coefficient
+  
+  return(MCC)
+}
+
+knn_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = knn_predictions, depvar_name = "Heart disease", method_name = "K-nn")
+svm_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = svm_predictions, depvar_name = "Heart disease", method_name = "SVM")
+lpm_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = lpm_predictions, depvar_name = "Heart disease", method_name = "LPM")
+logit_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = logit_predictions, depvar_name = "Heart disease", method_name = "Logit")
+tree_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = tree_predictions, depvar_name = "Heart disease", method_name = "Tree")
+rf_table <- confusion_matrix(depvar = test_heart$heart_disease, preds = rf_predictions, depvar_name = "Heart disease", method_name = "Random forest")
+
+
+df <- list(knn_table, svm_table, lpm_table, logit_table, tree_table, rf_table)
+
+confusion_mat <- df %>% reduce(inner_join, by = c("Heart disease", "Predictions"))
+
+confusion_mat <- confusion_mat %>% mutate("Heart disease" = ifelse(as.numeric(confusion_mat$"Heart disease") == 1, "Yes", "No")) %>%
+                                   mutate("Predictions" = ifelse(as.numeric(confusion_mat$"Predictions") == 1, "Yes", "No"))
+confusion_mat
+```
+
+## Assessing performance across classification methods
+- Let us look at the performance measure, MCC (Matthews correlation coefficient). The higher, the better
+```{r, echo = FALSE}
+knn_MCC <- MCC(depvar = test_heart$heart_disease, predictions = knn_predictions, depvar_name = "Heart disease", method_name = "K-nn")
+svm_MCC <- MCC(depvar = test_heart$heart_disease, predictions = svm_predictions, depvar_name = "Heart disease", method_name = "SVM")
+lpm_MCC <- MCC(depvar = test_heart$heart_disease, predictions = lpm_predictions, depvar_name = "Heart disease", method_name = "LPM")
+logit_MCC <- MCC(depvar = test_heart$heart_disease, predictions = logit_predictions, depvar_name = "Heart disease", method_name = "Logit")
+tree_MCC <- MCC(depvar = test_heart$heart_disease, predictions = tree_predictions, depvar_name = "Heart disease", method_name = "Tree")
+rf_MCC <- MCC(depvar = test_heart$heart_disease, predictions = rf_predictions, depvar_name = "Heart disease", method_name = "Random forest")
+
+
+methods <- c("K-nn", "SVM", "LPM", "Logit", "Tree", "Random forest")
+mcc <- c(knn_MCC, svm_MCC, lpm_MCC, logit_MCC, tree_MCC, rf_MCC)
+  
+MCC_table <- data.frame(Method = methods, MCC = mcc)
+
+MCC_table <- MCC_table %>% arrange(desc(MCC))
+```
+
+```{r}
+MCC_table
+```
+
+
+<!-- ```{r} -->
+
+<!-- gna <- inner_join(svm_table, knn_table, lpm_table, by = c("Heart disease", "Predictions")) -->
+<!-- merge(svm_table, knn_table, by = c("Heart disease", "Predictions")) -->
+
+
+<!-- knn_table  <- data.frame(table (true = test_heart$heart_disease, -->
+<!--                "K-nn predictions" = knn_predictions)) -->
+<!-- colnames(knn_table) <- c("Truth", "Predictions", "K-nn") -->
+
+<!-- svm_table  <- data.frame(table (true = test_heart$heart_disease, -->
+<!--                "SVM predictions" = svm_predictions)) -->
+<!-- colnames(svm_table) <- c("Truth", "Predictions", "SVM") -->
+
+<!-- gna <- inner_join(svm_table, knn_table, by = c("Truth", "Predictions")) -->
+
+<!-- ``` -->
+
+
+## Conclusion
+- There are many more classification methods:
+    - Linear/quadratic discriminant analysis
+    - Neural networks
+    - Kernel based estimators: Klein Spady's, Ichimura's
+    - Probit (normal distribution instead of logistic)
+- Some estimators can deal with multiple classes: Multinomial logit/probit, unordered logit/probit
+- And many more!
+

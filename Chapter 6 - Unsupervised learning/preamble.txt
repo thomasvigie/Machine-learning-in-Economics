@@ -1,0 +1,85 @@
+\usepackage[T1]{fontenc}    % package to select font encodings 
+\usepackage{standalone}     % allows to include another tex file and ignore the package loading and the \begin{document} commands 
+%\usepackage[latin9]{inputenc}
+
+% A couple of useful packages -------------------------------
+\usepackage{xcolor}   % package to get access to more colours, shades, tones, etc
+\usepackage{amsthm}   % package to define theorem-like structures
+\usepackage{amsmath}  % package to improve math related things
+\usepackage{amssymb}  % package for extra mathematical symbols
+\usepackage{bm}
+\usepackage{babel}    % package to include typographical rules from many languages
+\usepackage{graphicx} % package to include graphs, pictures etc
+\usepackage{float}    % package to define an dplace floats like figures more conveniently
+\usepackage[caption = false]{subfig}  % package to make captions on figures
+\usepackage{pstricks} % package to create colours and other macros
+% Graphs packages
+\usepackage{tikz, pgfplots}
+\pgfplotsset{compat = newest}
+\usetikzlibrary{intersections, angles, patterns}
+\usepgfplotslibrary{fillbetween}   % For surpluses
+\hypersetup{colorlinks = true, linkcolor = SFUblue, urlcolor = SFUblue}
+
+\mode<presentation>    
+{	
+\usetheme{Luebeck}  % The beamer theme used
+%\usetheme{Boadilla}   % Another beamer theme
+%\usecolortheme{crane}   % A beamer color set. Looks good, but not as good as SFU's colors
+\usecolortheme{SFU}   %The package "beamercolorthemeSFU" is in the same folder as the tex file
+
+\usefonttheme{serif}    
+\usefonttheme{structurebold}   % changes the look of slides titles
+\setbeamertemplate{blocks}[rounded][shadow = true]  % changes the way \block environments look like
+\setbeamertemplate{navigation symbols}{} % Clear navigation symbols at the bottom right corner of the slides
+}
+% Style -------------------------------------------------------------------
+
+\newrgbcolor{lightblue}{.80 .91 .99}
+\newrgbcolor{DarkBlue}{0.2 0.30 0.60}
+\newrgbcolor{SeaBlue}{0 0.6 0.8}
+\newrgbcolor{DarkRed}{0.8 0 0.2}
+\newrgbcolor{pddblue}{.17 .31 .44}
+\definecolor{pdlblue}{rgb}{.75,.85,.92}
+\definecolor{pdllblue}{rgb}{.9,.95,.98}
+\newrgbcolor{FadeBlue}{0.75 0.85 0.92}
+\newrgbcolor{SkyBlue}{0.6 0.8 1}
+
+\definecolor{SFUgray}{RGB}{84,88,90}
+\definecolor{SFUgold}{RGB}{193,160,30}
+\definecolor{SFUred}{RGB}{204,6,51}
+\definecolor{SFUblue}{RGB}{28,79,156}
+
+\definecolor{light-gray}{RGB}{236,236,236}
+\definecolor{light-gold}{RGB}{240,232,199}
+\definecolor{lighter-gold}{RGB}{239,235,222}
+\newrgbcolor{darkgreen}{0 0.3 0.3}
+\newrgbcolor{medgreen}{0 0.8 0.4}
+\newrgbcolor{lightgreen}{0.6 1 0.6}
+\newrgbcolor{chartreuse}{0.5 1 0}
+\newrgbcolor{charcoal}{0.21 0.27 0.31}
+\newrgbcolor{darkcyan}{0 0.55 0.55}
+
+\newrgbcolor{carrot}{0.91 0.41 0.17}
+
+\newrgbcolor{darkolivegreen}{.33333 .41961 .18431}
+\newrgbcolor{fadedolivegreen}{.96 .97 0.89}
+
+\newcommand{\indep}{\raisebox{0.05em}{\rotatebox[origin=c]{90}{$\models$}}} % independence of random variables symbol
+%-------------------------------------------------------------
+\date{}    % Shows date of compilation, or nothing if using {}
+%\begin{document}
+%-------------------------------------------------------------
+\setbeamertemplate{itemize items}[square]  % have square bullet points 
+%\beamerdefaultoverlayspecification{<+->} % to make bullet points appear one by one 
+%-----------------------------------------------
+%\title[\color{white}Monopoly]{Chapter 1\\ Monopoly} 
+%\author[Chapter 1]{\textbf{Simon Fraser University\\ ECON 220W\\ Spring term 2021}} 
+
+
+% Will replace the Rmarkdown titles
+
+%\begin{document}
+
+\AtBeginDocument{\title[\hyperlink{outline}{\color{white}Unsupervised methods}]{Chapter 6\\ Unsupervised learning methods}}  
+\AtBeginDocument{\author[Chapter 6]{\textbf{Simon Fraser University\\ ECON 483\\ Summer 2023 } \\ \vspace{0.5cm} \begin{center} \includegraphics[scale = 1]{../ECON logo grey.png} \end{center}}   }
+

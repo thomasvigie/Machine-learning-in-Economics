@@ -1,0 +1,1086 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output:
+  beamer_presentation:
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+  slidy_presentation: default
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+always_allow_html: true
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+# list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "party", "tree", "rpart", "rpart.plot", "np", "car", "modelr", "FactoMineR", "pls")
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(glmnet)
+library(np)
+library(pls)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+library(crimedata)
+library(fivethirtyeight)
+library(ISLR)
+library(stargazer)
+# library(randomForest)
+# library(party)
+# library(tree)
+# library(rpart)       # performing regression trees
+# library(rpart.plot)  # plotting regression trees
+library(FactoMineR)
+# library(car)
+library(latex2exp)
+library(modelr)
+library(leaps)
+# library(ggvis) # data visualization package
+```
+
+## Disclaimer
+
+These notes are based on the Book \href{https://www.statlearning.com/}{\textbf{Introduction to Statistical Learning with \textsf{R}}}, by Gareth James, Daniela Witten, Trevor Hastie and Robert Tibshirani. Any error is my sole responsibility.
+
+
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## What is model selection?
+- Predictions can be built in many different ways: Different methods, different variables, etc
+- The use of some estimators over others can be justified by the assumptions made: OLS, IV, GLS, etc
+- But once one settles on an estimator, what variables should one include, besides the ones of interest? 
+- In this lecture, we are going to compare models in order to select the "best" one
+- Model selection is more important for \textbf{prediction} problems than \textbf{estimation} problems as in estimation problems, we are interested in the effect of a specific variable
+- Suggested reading: Chapter 6 in \href{https://www.statlearning.com/}{\textbf{ISLR}}
+
+
+<!-- ## Measuring the quality of Fit (cont'd) -->
+<!-- - We previously saw that the $\bm{R^2}$ can be used to measure the quality of an estimated model -->
+<!-- - How do you compare two models with similar $R^2$ however? -->
+<!-- - Another commonly used measure is the \textbf{mean squared error (MSE)}: -->
+<!-- \[ -->
+<!-- \bm{MSE \equiv \frac{1}{n}\sum_{i=1}^n (y_i - \hat{f}(x_i))^2} -->
+<!-- \] -->
+<!-- - It measures the \textbf{distance} between the data $\bm{y_i}$ and the predictions $\bm{\hat{f}(x_i)}$ -->
+<!-- - It can be used regardless of the model: Linear, quadratic, nonparametric, trees,... -->
+<!-- - If $\bm{\hat{f}(x_i)=x_i^{\prime}\hat{\beta}}$, we are back to the OLS minimization problem! -->
+
+## Measuring the quality of Fit 
+- The sample used to estimate the model is called the \textbf{training sample}
+- Recall the definition of in-sample MSE:
+\[
+\bm{MSE \equiv \frac{1}{n}\sum_{i=1}^n (y_i - \hat{f}(x_i))^2}
+\]
+- The OLS estimator pretty much minimizes the \textbf{training sample MSE} assuming $\bm{f(x_i)=x_i^{\prime}\beta}$
+- But at the end of the day, we don't want to predict the data we observe. Rather, we want to observe data where we only observe $\bm{x_i}$, not $\bm{y_i}$
+- So minimizing the MSE of the sample we use to estimate the model does not tell much about the **general** quality of the fit
+
+## Outline
+\label{outline}
+
+- \hyperlink{tradeoff}{\textbf{The bias-variance tradeoff} }
+    - \hyperlink{bias}{\textbf{Bias} }
+    - \hyperlink{variance}{\textbf{Variance} }
+- \hyperlink{linear models selection}{\textbf{Selection of linear models} }
+- \hyperlink{validation}{\textbf{Validation sets and cross validation} }
+- \hyperlink{model averaging}{\textbf{Model averaging} }
+
+##
+\begin{center}  \label{tradeoff}
+\LARGE{\textbf{The bias-variance tradeoff} }
+\end{center}
+
+## The bias-variance tradeoff: Bias 
+\label{bias}
+
+- The \textbf{bias} of a statistical method refers to the error coming from approximating the real relationship by a simpler one
+- If the real relationship is linear, a linear model will do good
+- If not, a linear model will fail to pick up the true relationship pattern
+- As flexibility increases, the \textbf{bias} of the method decreases
+
+## The bias-variance tradeoff: Variance 
+\label{variance}
+
+- One can show that we can always increase the fit of the \textbf{training data} by increasing flexibility
+- But the predictions $\bm{\hat{f}()}$ will vary a lot if I use another training data set: That statistical method has high \textbf{variance}
+- Flexibility helps capture patterns on the training data set, but these patterns could be coming from that data set in particular, and not be present in all data sets following the same data generating process
+- This is \textbf{overfitting!} (we can always increase the $\bm{R^2}$ by increasing flexibility, i.e. the number of regressors)
+- On the other hand, a rigid model fails to pick up the relevant patterns
+- Not flexible models don't try hard enough (low variance), too flexible models try too hard (high variance)
+
+## The bias-variance tradeoff: MSE Decomposition
+- Recall the population regression equation:
+
+\[
+\bm{y_i = f(x_i) + u_i}
+\]
+
+- One can decompose the \textbf{population test MSE} as:
+
+\[
+\bm{\mathbb{E}[(y_0 - \hat{f}(x_0))^2] = Var[\hat{f}(x_0)] + (\mathbb{E}[f(x_0) - \hat{f}(x_0)])^2 + Var(u_0)}
+\]
+
+where $\bm{x_0}$ is an observation taken out of the training sample
+
+- The first term is the \textbf{variance} of the estimator $\bm{\hat{f}(x_0)}$, the second term its squared \textbf{bias}, the third term is the \textbf{irreducible error}
+
+## The bias-variance tradeoff: MSE Decomposition
+\[
+\bm{\mathbb{E}[(y_0 - \hat{f}(x_0))^2] = Var[\hat{f}(x_0)] + (\mathbb{E}[f(x_0) - \hat{f}(x_0)])^2 + Var(u_0)}
+\]
+where $\bm{x_0}$ is an observation taken out of the training sample
+
+- The first term is the \textbf{variance}, the second term the \textbf{bias} (squared), the third term is the \textbf{irreducible error} (cannot be reduced as it is the part of the equation the model does not capture)
+- As flexibility of a method increases:
+    - its \textbf{bias} decreases
+    - its \textbf{variance} increases
+- All the terms are positive, so we want all of them to be low: There is a \textbf{tradeoff!}
+
+## Training data predictions
+```{r, echo = FALSE, results = "hide"}
+ MSE <- function(y, fhat)
+ {
+   mse <- mean((y - fhat)^2)
+   return (mse)
+ }
+# Generate the training data set
+ n <- 200
+ x <- rnorm(n)
+ x2 <- x^2
+ x3 <- x^3
+ u <- rnorm(n)
+ y <- exp(x) + u
+ f_x <- exp(x)
+# OLS estimation
+ ols <- lm(y ~ x)
+ ols_train <- ols$fitted
+# OLS estimation with a quadratic term
+ ols_2 <- lm(y ~ x + x2)
+ ols_2_train <- ols_2$fitted
+# OLS estimation with a quadratic and cubic term
+ ols_3 <- lm(y ~ x + x2 + x3)
+ ols_3_train <- ols_3$fitted
+ # OLS estimation with a polynomial of degree 6
+ x4 <- x^4
+ x5 <- x^5
+ x6 <- x^6
+ ols_6 <- lm(y ~ x + x2 + x3 + x4 + x5 + x6)
+ ols_6_train <- ols_6$fitted
+# A more flexible model, based on nonparametric regression
+ ll <- npreg(y ~ x, regtype = "ll", bws = 0.05)
+ ll_train <- ll$mean
+# Compute the training sample MSEs
+ MSE_ols_train <- MSE(y = y, fhat = ols_train)
+ MSE_ols_2_train <- MSE(y = y, fhat = ols_2_train)
+ MSE_ols_3_train <- MSE(y = y, fhat = ols_3_train)
+ MSE_ols_6_train <- MSE(y = y, fhat = ols_6_train)
+
+ MSE_ll_train <- MSE(y = y, fhat = ll_train)
+ dat_train <- data.frame(y, f_x, x, ols_train, ols_2_train, ols_3_train, ols_6_train, ll_train)
+```
+
+<!-- \begin{center} -->
+```{r, echo = FALSE, message = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+# Graph the predictions of each model against x
+ ggplot(data = dat_train, aes(x = x)) +
+   geom_point(aes(y = y), size = 2.5, alpha = 0.7)+
+   geom_line(aes(y = ols_train, color = "linear"), size = 2)+
+   geom_line(aes(y = ols_2_train, color = "quadratic"), size = 2)+
+   geom_line(aes(y = ols_3_train, color = "cubic"), size = 2.2)+
+   geom_line(aes(y = ols_6_train, color = "sextic"), size = 2.2)+
+   geom_line(aes(y = ll_train, color = "nonpara"), size = 2, alpha = 0.8)+
+  
+   labs(color = 'Regression method')+
+scale_color_manual( breaks = c( "cubic",
+                                "linear",
+                                "nonpara",
+                                "quadratic",
+                                "sextic"),       # Put them in alphabetical order,it is easier for colours.
+                          labels = c("Cubic",
+                                     "Linear",
+                                     "Nonparametric",
+                                     "Quadratic",
+                                     "Sextic"),
+                          values = c('linear' = 'purple',
+                                     'quadratic' = 'red',
+                                     'cubic' = 'green',
+                                     'sextic' = 'darkcyan',
+                                     'nonpara' = 'orange'
+                                  )) +
+   theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+         axis.title.y = element_text(family = "serif", size = 22),
+         legend.text = element_text(family = "serif", size = 22),
+         legend.title = element_text(family = "serif", size = 22),  
+         axis.text = element_text(size = 20)   )  +
+  xlab(TeX("$X_{i}$"))+
+   ylab(TeX("$Y_i$")) 
+```
+<!-- \end{center} -->
+
+## Test data predictions
+
+```{r, echo = FALSE, results = "hide"}
+ # Generate a test data set with the same process as the training data set
+x_test <- rnorm(n)
+x2_test <- x_test^2
+x3_test <- x_test^3
+x4_test <- x_test^4
+x5_test <- x_test^5
+x6_test <- x_test^6
+
+u_test <- rnorm(n)
+y_test <- exp(x_test) + u_test
+ # x <- data.frame(x = x_test)
+ # gna <- data.frame(x, y_test)
+ols_test <- predict(ols, newdata = data.frame(y = y_test, x = x_test))
+# ols_test <- cbind(1, x_test)%*%ols$coefficients
+ols_2_test <- predict(ols_2, newdata = data.frame(y = y_test, x = x_test, x2 = x2_test))
+ols_3_test <- predict(ols_3, newdata = data.frame(y = y_test, x = x_test, x2 = x2_test, x3 = x3_test))
+ols_6_test <- predict(ols_6, newdata = data.frame(y = y_test, x = x_test, x2 = x2_test, x3 = x3_test, x4 = x4_test, x5 = x5_test, x6 = x6_test))
+
+# # ols_2_test <- cbind(1, x_test, x_test^2)%*%ols_2$coefficients
+# # ols_3_test <- cbind(1, x_test, x_test^2, x_test^3)%*%ols_3$coefficients
+ll_test <- npreg(y ~ x, regtype = "ll", bws = 0.01, newdata = data.frame(y = y_test, x = x_test))$mean
+# # ll_test <- predict(ll, newdata = gna)
+dat_test <- data.frame(y_test, x_test, ols_test, ols_2_test, ols_3_test, ols_6_test, ll_test)
+```
+
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+# Graph the predictions of each model against x
+ ggplot(data = dat_test, aes(x = x_test)) +
+   geom_point(aes(y = y_test), size = 2.5, alpha = 0.7)+
+   geom_line(aes(y = ols_test, color = "linear"), size = 2)+
+   geom_line(aes(y = ols_2_test, color = "quadratic"), size = 2)+
+   geom_line(aes(y = ols_3_test, color = "cubic"), size = 2.2)+
+   geom_line(aes(y = ols_6_test, color = "sextic"), size = 2.2)+
+   geom_line(aes(y = ll_test, color = "nonpara"), size = 2, alpha = 0.8)+
+  
+   labs(color = 'Regression method')+
+         scale_color_manual( breaks = c( "cubic",
+                                         "linear",
+                                         "nonpara",
+                                         "quadratic",
+                                         "sextic"), # Put them in alphabetical order,it is easier for colours.
+                          labels = c("Cubic",
+                                     "Linear",
+                                     "Nonparametric",
+                                     "Quadratic",
+                                     "Sextic"),
+                          values = c('linear' = 'purple',
+                                     'quadratic' = 'red',
+                                     'cubic' = 'green',
+                                     'sextic' = 'darkcyan',
+                                     'nonpara' = 'orange'
+                                  )) +
+   theme(axis.title.x = element_text(family = "serif", size = 22), # Changes fonts into times new roman
+         axis.title.y = element_text(family = "serif", size = 22),
+         legend.text = element_text(family = "serif", size = 22),
+         legend.title = element_text(family = "serif", size = 22),
+                  axis.text = element_text(size = 20)   )  +
+  xlab(TeX("$X_{i}$"))+
+   ylab(TeX("$Y_i$")) 
+```
+\end{center}
+
+```{r, echo = FALSE, results = "hide"}
+MSE_ols_test <- MSE(y = y_test, fhat = ols_test)
+MSE_ols_2_test <- MSE(y = y_test, fhat = ols_2_test)
+MSE_ols_3_test <- MSE(y = y_test, fhat = ols_3_test)
+MSE_ols_6_test <- MSE(y = y_test, fhat = ols_6_test)
+
+MSE_ll_test <- MSE(y = y_test, fhat = ll_test)
+mses <- rbind(MSE_ols_train, MSE_ols_test, MSE_ols_2_train, MSE_ols_2_test, MSE_ols_3_train, MSE_ols_3_test, MSE_ols_6_train, MSE_ols_6_test, MSE_ll_train, MSE_ll_test)
+# # I associate a level of flexibility to each model, OLS being the least flexible and the nonparametric model beign the most flexible
+flexibility <- rbind("1", "1", "2", "2", "3", "3", "4", "4", "5", "5")
+sample <- rbind("training", "test", "training", "test", "training", "test", "training", "test", "training", "test")
+dat <- data.frame(sample, flexibility, mses)
+```
+
+## The bias-variance tradeoff: Illustration 
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(data = dat, aes(x = flexibility, y = mses, color = sample, group = sample) ) +
+     geom_point(size = 5)+
+     geom_line(size = 3)+
+  xlab("Flexibility") +
+  ylab("Test MSE") +
+  scale_x_discrete(limits = as.character(1:5), breaks = as.character(1:5) ,
+                  labels =  c("Linear", "Quadratic", "Cubic", "Sextic", "Nonparametric") )+
+  labs(colour = "Sample") +
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif", size = 22),
+        legend.text = element_text(family = "serif", size = 22),
+        legend.title = element_text(family = "serif", size = 22),
+                  axis.text = element_text(size = 20)   )  
+```
+\end{center}
+ 
+## The bias-variance tradeoff: Summary
+- The \textbf{training data MSE} is a decreasing function of flexibility of the model
+- In words: The more flexible the model, the better the predictions of the training sample
+- The \textbf{test data MSE} has a U shape!
+- In words: A very flexible model and a non flexible model do not predict as well as a moderately flexible model
+- The different model selection methods presented here aim at finding the best \textbf{tradeoff}
+
+##
+\begin{center}  \label{linear models selection}
+\LARGE{\textbf{Selection among linear models} }
+\end{center}
+
+## Selection among linear models: Outline
+- \hyperlink{information}{\textbf{Information criteria} }
+- \hyperlink{subset}{\textbf{Subset selection} }
+    - \hyperlink{best}{\textbf{Best subset selection} }
+    - \hyperlink{stepwise}{\textbf{Stepwise selection} }
+<!-- - \hyperlink{shrinkage}{\textbf{Shrinkage methods} } -->
+<!--     - \hyperlink{ridge}{\textbf{Ridge regression} } -->
+<!--     - \hyperlink{lasso}{\textbf{LASSO} } -->
+- \hyperlink{dimension reduction}{\textbf{Dimension reduction} }
+    - \hyperlink{PCA}{\textbf{Principal component analysis} }
+    - \hyperlink{pls}{\textbf{Partial least squares} }
+
+##
+\begin{center}  \label{information}
+\LARGE{\textbf{Information criteria} }
+\end{center}
+
+## Information criteria
+- For \textbf{linear models} with different numbers of variables, we can use criteria that account for the \textbf{bias-variance tradeoff} using the **full sample**, i.e. without dividing the sample into training vs test samples
+- Let
+\[
+\bm{RSS \equiv \sum_{i=1}^n(y_i-x_i^{\prime}\hat{\beta})^2}
+\]
+be the \textbf{Residual Sum of Squares} of the sample
+- Let $\bm{\hat{\sigma}^2}$ be a consistent estimate of $\bm{\sigma^2}$, the variance of the error term
+- Given that RSS decreases as the number of variables increases, one should include a "penalty term" for increasing flexibility to mitigate the variance of the model
+- Criteria involving RSS and a penalty should be **minimized**, as we want both parts to be small
+
+## $\bm{C_p}$, AIC, BIC, and adjusted $\bm{R^2}$
+- For a model employing $\bm{d}$ variables The $\bm{C_p}$ estimate is defined as
+\[
+\bm{C_p(d) \equiv \frac{1}{n}(RSS + 2d\hat{\sigma}^2)}
+\]
+- The \textbf{Akaike information criterion (AIC)} is defined as
+\[
+\bm{AIC(d) \equiv \frac{1}{n\hat{\sigma}^2}(RSS + 2d\hat{\sigma}^2)}
+\]
+- Note that AIC is used if the error term is assumed to follow a normal distribution, and is equivalent to $\bm{C_p}$ for linear models
+    
+## $\bm{C_p}$, AIC, BIC, and adjusted $\bm{R^2}$
+- The \textbf{Bayesian information criterion (BIC)} is defined as
+\[
+\bm{BIC(d) \equiv \frac{1}{n\hat{\sigma}^2}(RSS + d\log(n)\hat{\sigma}^2)}
+\]
+- The \textbf{adjusted $\bm{R^2}$} denoted $\bm{\bar{R}^2}$ is defined as
+\[
+\bm{\bar{R}^2 \equiv 1 - \frac{RSS/(n-d-1)}{TSS/(n-1)}}
+\]
+- The \textbf{adjusted $\bm{R^2}$} should be maximized, as it depends negatively on RSS
+
+##
+\begin{center}  \label{subset}
+\LARGE{\textbf{Subset selection} }
+\end{center}
+
+## Best subset selection \label{best}
+- When one has many covariates available, the question is not only to know \textbf{how many} variables to include but also \textbf{which} to include
+- If one has access to 5 covariates, it makes 1 model with 0 covariates, 5 models with 1 covariate, 10 models with 2 covariates, 10 models with 3 covariates, 5 models with 4 covariates, and 1 model with 5 covariates. Proceed as follows:
+    - Find the best model **for each** number of covariates: the best model with 1 covariate, the best with 2, etc based on the best $\bm{R^2}$ every time
+    - Find the best model overall based on $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+    
+\begin{algorithm*}[Best subset selection]
+
+\begin{itemize}
+\item Find the best model \textbf{for each} number of covariates: the best model with 1 covariate ($\bm{\mathcal{M}_1}$), the best with 2 ($\bm{\mathcal{M}_2}$), etc based on the best $\bm{R^2}$ every time
+\item Find the best model overall based on $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+\end{itemize}
+
+\end{algorithm*}
+
+## Stepwise selection: Forward and backward \label{stepwise}
+- If one has many covariates, \textbf{best subset selection} becomes computationally inefficient
+- Instead, one can gradually increase the number of covariates to add: This is \textbf{Stepwise forward selection}
+    - Start with the smallest model (no covariates)
+    - Choose the next variable to add based on highest increase in $\bm{R^2}$
+- Choose the best model overall based on $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+- \textbf{Stepwise backward selection} works the opposite way: Start with the full model, remove covariates one by one based on highest $\bm{R^2}$, and finally choose the best model overall based on $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+- Both methods involve estimating less models than best subset selection
+
+## Stepwise selection: Forward 
+\begin{algorithm*}[Forward selection]
+
+\begin{itemize}
+\item Estimate the model without any covariate, call it $\bm{\mathcal{M}_0}$
+\item Find the best model that augments $\bm{\mathcal{M}_0}$ with one more covariate in terms of $\bm{R^2}$: call it $\bm{\mathcal{M}_1}$
+\item Find the best model that augments $\bm{\mathcal{M}_1}$ with one more covariate: call it $\bm{\mathcal{M}_2}$
+\item Find the best model that augments $\bm{\mathcal{M}_2}$ with one more covariate: call it $\bm{\mathcal{M}_3}$
+\item Continue until obtaining $\bm{\mathcal{M}_K}$
+\item Select the best model among $\bm{\mathcal{M}_0}$, $\bm{\mathcal{M}_1}$, $\bm{\mathcal{M}_2}$,...,$\bm{\mathcal{M}_K}$ using $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+\end{itemize}
+
+\end{algorithm*}
+
+## Stepwise selection: Backward
+
+\begin{algorithm*}[Backward selection]
+
+\begin{itemize}
+\item Estimate the full model, i.e. the one with all the $\bm{K}$ covariates, call it $\bm{\mathcal{M}_K}$
+\item Find the best model that removes one covariate from $\bm{\mathcal{M}_K}$ in terms of $\bm{R^2}$: call it $\bm{\mathcal{M}_{K-1}}$
+\item Find the best model that removes one covariate from $\bm{\mathcal{M}_{K-1}}$ : call it $\bm{\mathcal{M}_{K-2}}$
+\item Continue until obtaining $\bm{\mathcal{M}_{0}}$
+\item Select the best model among $\bm{\mathcal{M}_0}$, $\bm{\mathcal{M}_1}$, $\bm{\mathcal{M}_2}$,...,$\bm{\mathcal{M}_K}$ using $\bm{AIC}$, $\bm{BIC}$, $\bm{C_p}$, or adjusted $\bm{R^2}$
+\end{itemize}
+
+\end{algorithm*}
+
+## Subset selection in \textbf{\textsf{Rstudio}}
+- Consider the \textbf{Credit} data set from the \textbf{ISLR} library
+- Reports the \textbf{Balance} (average credit card debt. Not lower than zero here) for a number of individuals with:
+    - Quantitative predictors: \textbf{age, education, income}
+    - Qualitative predictors: \textbf{gender, student, status, ethnicity}
+- We want to predict \textbf{Balance}: what combination of variables to include?
+
+\small
+```{r, message = FALSE, results = "hide"}
+data(Credit)
+Credit
+n_obs <- nrow(Credit)
+Credit_1 <- Credit[1:floor(n_obs/3),]
+Credit_2 <- Credit[(floor(n_obs/3)+1):floor(2*n_obs/3),]
+Credit_3 <- Credit[(floor(2*n_obs/3)+1):n_obs,]
+Credit_12 <- rbind(Credit_1, Credit_2) # Combine the first 2 subsets
+K <- ncol(Credit_12)  # number of variables
+```
+
+## Best subset selection in \textbf{\textsf{R}}
+- The **\texttt{regsubsets}** function from the **\texttt{leaps}** package allows to perform subset selection
+- Several arguments must be specified
+    - **\texttt{formula}**: Full model formula
+    - **\texttt{data}**: Data frame (optional)  
+    - **\texttt{nvmax}**: Maximum size of subsets to consider (optional)
+    - **\texttt{method}**: Forward, backward or exhaustive search can be done (optional)
+- Many other options can be used, but they are not necessary for the function to run
+
+
+## Best subset selection in \textbf{\textsf{R}}
+
+\footnotesize
+```{r, message = FALSE}
+subset_selection <- regsubsets(Balance ~ ., data = Credit_12, nvmax = 12)
+# Show the different measures after all the models are estimated
+subset_sum <- summary(subset_selection)
+data.frame( Adj.R2 = which.max(subset_sum$adjr2),
+            CP = which.min(subset_sum$cp),
+            BIC = which.min(subset_sum$bic)    )
+
+# Let us do best subset selection according to adjusted R squared
+subset_adjr2_model <- data.frame(selected =
+              as.matrix(subset_sum$which[which.max(subset_sum$adjr2), ]))
+# Look at the selected variables
+subset_adjr2_model <- dplyr::filter(subset_adjr2_model, selected == TRUE)
+subset_adjr2_model$variable <- row.names(subset_adjr2_model) 
+subset_adjr2_model$variable
+```
+
+## Best subset selection in \textbf{\textsf{R}}
+
+\tiny
+```{r, message = FALSE}
+# Best subset selection model according to Adjusted R squared
+best_subset_model <- lm(Balance ~ Income + Limit + Rating + Cards + Age + Student, data = Credit_3)
+summary(best_subset_model)  
+# Predict Balance in the third data set
+best_subset_pred <- predict(best_subset_model, newdata = Credit_3)
+```
+
+## Best subset selection in \textbf{\textsf{R}}
+
+\centering
+```{r, message = FALSE, echo = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+# Let us graph the R squared according to the number of variables
+rsq <- as.data.frame(subset_sum$rsq)
+names(rsq) <- "R2"
+rsq <- cbind(1:12, rsq)
+names(rsq) <- c("Variables", "R2")
+
+ggplot(data = rsq) +
+  geom_point(aes(x = Variables, y = R2), colour = "blue", size = 4) +
+  geom_point(aes(x = 12, y = max(R2)), colour = "red", size = 4) +
+  ylab("R squared") +
+  xlab("Number of variables")+
+  scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) +
+    theme(axis.title.x = element_text(family = "serif", size = 25),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif", size = 25),
+        legend.text = element_text(family = "serif", size = 25),
+        legend.title = element_text(family = "serif", size = 25),
+                  axis.text = element_text(size = 22)   )  
+```
+
+
+
+## Best subset selection in \textbf{\textsf{R}}
+\centering
+\tiny
+```{r, echo = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+rss_measures <- data.frame(variables = 1:12, value = subset_sum$rss, criterion = "RSS", optimal = min(subset_sum$rss), optimal_number = which.min(subset_sum$rss))
+adjr2_measures <- data.frame(variables = 1:12, value = subset_sum$adjr2, criterion = "Adj-R2", optimal = max(subset_sum$adjr2), optimal_number = which.max(subset_sum$adjr2))
+cp_measures <- data.frame(variables = 1:12, value = subset_sum$cp, criterion = "Cp", optimal = min(subset_sum$cp), optimal_number = which.min(subset_sum$cp))
+bic_measures <- data.frame(variables = 1:12, value = subset_sum$bic, criterion = "BIC", optimal = min(subset_sum$bic), optimal_number = which.min(subset_sum$bic))
+
+dat <- rbind(rss_measures, adjr2_measures, cp_measures, bic_measures)
+
+ggplot(data = dat, aes(x = variables)) +
+  geom_line(aes(y = value, colour = criterion), size = 2) +
+  geom_point(aes(x = optimal_number, y = optimal), colour = "red", size = 4) +
+  labs(colour = 'Criterion') +
+  scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) +
+    facet_wrap(~ criterion, scales = "free") +  theme(axis.title.x = element_text(family = "serif", size = 25),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif", size = 25),
+        legend.text = element_text(family = "serif", size = 25),
+        legend.title = element_text(family = "serif", size = 25),
+                  axis.text = element_text(size = 22)   )  
+
+```
+
+## Forward stepwise selection in \textbf{\textsf{R}}
+
+\scriptsize
+```{r, message = FALSE}
+forward_selection <- regsubsets(Balance ~ ., data = Credit_12, nvmax = 12, 
+                                method = "forward")
+forward_sum <- summary(forward_selection)
+data.frame(
+  Adj.R2 = which.max(forward_sum$adjr2),
+  CP = which.min(forward_sum$cp),
+  BIC = which.min(forward_sum$bic)
+)
+
+# Let us do forward selection according to BIC
+forward_bic_model <- data.frame(selected = 
+                     as.matrix(forward_sum$which[which.min(forward_sum$bic),  ]))
+# Look at the selected variables
+forward_bic_model <- dplyr::filter(forward_bic_model, selected == TRUE)
+forward_bic_model$variable <- row.names(forward_bic_model) 
+forward_bic_model$variable
+```
+
+## Forward stepwise selection in \textbf{\textsf{R}}
+
+\tiny
+
+```{r, message = FALSE}
+# Best forward stepwise selection model according to BIC
+forward_stepwise_model <- lm(Balance ~ Income + Limit + Rating + Cards + Student, data = Credit_3)
+summary(forward_stepwise_model)  
+# Predict the third data set
+forward_stepwise_pred <- predict(forward_stepwise_model, newdata = Credit_3)
+```
+
+## Backward stepwise selection in \textbf{\textsf{R}}
+
+\scriptsize
+```{r, message = FALSE}
+backward_selection <- regsubsets(Balance ~ ., data = Credit_12, nvmax = 12, 
+                                 method = "backward")
+backward_sum <- summary(backward_selection)
+data.frame(Adj.R2 = which.max(backward_sum$adjr2),
+           CP = which.min(backward_sum$cp),
+           BIC = which.min(backward_sum$bic) )
+# Let us do backward selection according to Cp
+backward_cp_model <- data.frame(selected = 
+                     as.matrix(backward_sum$which[which.min(forward_sum$cp),  ]))
+# Look at the selected variables
+backward_cp_model <- dplyr::filter(backward_cp_model, selected == TRUE)
+backward_cp_model$variable <- row.names(backward_cp_model) 
+backward_cp_model$variable
+```
+## Backward stepwise selection in \textbf{\textsf{R}}
+
+\tiny
+
+```{r, message = FALSE}
+# Best backward stepwise selection model according to Cp
+backward_stepwise_model <- lm(Balance ~ Income + Limit + Cards + Age, data = Credit_3)
+summary(backward_stepwise_model)  
+# Predict the third data set
+backward_stepwise_pred <- predict(backward_stepwise_model, newdata = Credit_3)
+```
+
+##
+\begin{center}  \label{dimension reduction}
+\LARGE{\textbf{Dimension reduction} }
+\end{center}
+
+## Dimension reduction
+- The previous approaches select covariates (information criteria, subset selection) 
+- Another approach is to "represent" many variables by transforming them into a set of variables with similar features, but in a lesser number
+- The model is then estimated using the transformed variables
+- The transformed variables have the most important features of the original variables, but they will help mitigate \textbf{overfitting} by reducing the dimension of the original set
+- It is particularly relevant in the presence of collinearities, or if the number of covariates is close/bigger than the sample size
+- Note that if the variables are transformed, they lose interpretation. So transformations can be used for prediction, not estimation
+
+## Dimension reduction: Principal components regression
+\label{PCA}
+
+- \textbf{Principal Component Analysis (PCA)} is an \textbf{unsupervised learning} method (no $\bm{Y}$ involved, only $\bm{X}$'s) 
+- Generally used to observe high-dimensional data before getting into further analysis
+- It summarizes variance and correlation patterns of covariates in a more compact way
+- With $\bm{p}$ variables at hand, \textbf{Principal Component Analysis (PCA)} looks for $\bm{M \ll p}$ variables $\bm{Z_m}$ that capture the main features (in particular, variance and correlation) of the original variables:
+\[
+\bm{Z_m = \sum_{j=1}^{p}\phi_{j,m}X_j}
+\]
+
+## Dimension reduction: Principal components regression 
+
+\[
+\bm{Z_m = \sum_{j=1}^{p}\phi_{j,m}X_j}
+\]
+
+- PCA finds the coefficients $\bm{\phi_{j,m}, \, \, j = 1,...,p,\, \, \, m = 1,...,M}$
+- \textbf{Principal components regression} then consists in estimating the model using these $\bm{M}$ variables
+- How much should $\bm{M}$ be is found via cross validation (again!)
+
+## PCA in \textbf{\textsf{Rstudio}}
+- In \textbf{\textsf{Rstudio}}, the **\texttt{pls}** package proposes principal component regression. The command to use is **\texttt{pcr()}**
+- We can use cross validation to select the optimal amount of principal components to use (hopefully less than $\bm{p}$, so dimension reduction actually happens)
+
+\scriptsize
+```{r}
+# Principal component regression
+pcr_fit <- pcr(Credit_12$Balance ~ data.matrix(Credit_12[ , 2:(K - 1)]), scale = TRUE, 
+               validation = "CV")
+```
+
+## PCA in \textbf{\textsf{Rstudio}}
+\tiny
+```{r}
+# Principal component regression
+pcr_fit <- pcr(Credit_12$Balance ~ data.matrix(Credit_12[ , 2:(K - 1)]), scale = TRUE, 
+               validation = "CV")
+summary(pcr_fit)
+# validationplot(pcr_fit, scale = TRUE, val.type = "MSEP")
+pcr_pred <- predict(pcr_fit, data.matrix(Credit_3[ , 2:(K - 1)]), ncomp = 7)
+```
+
+## Dimension reduction: Partial least squares
+\label{pls}
+
+- PCA is \textbf{unsupervised}, partial least squares is \textbf{supervised}: It uses the dependent variable $\bm{Y}$
+- Idea: look for $\bm{M \ll p}$ variables $\bm{Z_m}$ that capture the main features (in particular, variance and correlation) of the original variables:
+\[
+\bm{Z_m = \sum_{j=1}^{p}\phi_{j,m}X_j}
+\]
+- PLS uses $\bm{Y}$ in the process of finding $\bm{\phi_{j,m}, \, \, j = 1,...,p,\, \, \, m = 1,...,M}$
+- This way, the new variables $\bm{Z_m}$ not only represent the old variables, but are also related to $\bm{Y}$
+
+## Partial Least Squares in \textbf{\textsf{Rstudio}}
+- In \textbf{\textsf{Rstudio}}, the **\texttt{pls}** package proposes principal component regression. The command to use is **\texttt{plsr()}**
+- We can use cross validation to select the optimal amount of principal components to use (hopefully less than $\bm{p}$, so dimension reduction actually happens)
+
+\scriptsize
+```{r}
+# Partial least squares regression
+plsr_fit <- plsr(Credit_12$Balance ~ data.matrix(Credit_12[ , 2:(K - 1)]), scale = TRUE, 
+                 validation = "CV")
+# validationplot(plsr_fit, scale = TRUE, val.type = "MSEP")
+plsr_pred <- predict(plsr_fit, data.matrix(Credit_3[ , 2:(K - 1)]), ncomp = 7)
+```
+
+
+## Partial Least Squares in \textbf{\textsf{Rstudio}}
+\tiny
+```{r}
+# Partial least squares regression
+summary(plsr_fit)
+# validationplot(plsr_fit, scale = TRUE, val.type = "MSEP")
+# plsr_pred <- predict(plsr_fit, data.matrix(Credit_3[ , 1:(K - 1)]), ncomp = 7)
+```
+
+##
+\begin{center}  \label{validation}
+\LARGE{\textbf{Validation sets and cross validation} }
+\end{center}
+
+## Validation sets
+- The methods above apply to linear models as the flexibility is dictated by the number of variables included
+- Validation sets and cross validation work on a broader range of statistical methods, as they are just based on prediction. Hence they are widely used in the machine learning community
+- Since we want to select a model based on out-of-sample performance, let us look at out-of-sample performance!
+- Cut the data set into 2 data sets:
+    - The \textbf{training data set} is used to estimate the models (estimate the OLS coefficients, etc)
+    - The \textbf{test data set} is used to \textbf{test} the models predictions
+- The best model is chosen based on the lowest \textbf{test MSE}
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+
+The process goes as follows:
+
+- Divide the data set in two data sets: \textbf{training} and \textbf{test} data sets (we divide it in 3 to see how the best model predicts the $3^{rd}$ data set)
+- \textbf{``Train''} or \textbf{estimate} all the possible linear models on the \textbf{training data set}
+- Compute the \textbf{test MSE} of each model using the \textbf{test data set} 
+- Choose the model with the lowest \textbf{test MSE}
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+
+- In order to do this the least tedious way, I create several functions that will automatize the process
+- First, a function that creates a formula when inputting the $\bm{X}$ and $\bm{Y}$ variables
+
+\small
+
+```{r, message = FALSE, results = "hide"}
+gen_formula <- function(y_name, X_names){
+  formu <- as.formula(
+    paste(y_name,"~", 
+          paste(X_names, collapse = " + ")) )
+  return(formu)
+}
+```
+
+```{r, message = FALSE, warning = FALSE}
+# Example
+y_var <- "Income"
+x_vars <- c("Age", "Experience", "Education")
+gen_formula(y_var, x_vars)
+```
+
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- Then, a function that generates a formula using the previous function, run a linear regression on ***training_data***, and computes the **training MSE** (***training_data***) and **test MSE** (***test_data***) 
+
+```{r, message = FALSE, results = "hide"}
+# We make a function that computes the training and test MSE 
+# when y_name is the name of the dependent variable, 
+# and X_name are the names of the regressors 
+MSEs <- function(X_name, Y_name,  training_data, test_data)
+  {
+  form <- gen_formula( y_name = Y_name , X_names = X_name ) # Make the formula
+  reg_results <- lm(form, data = training_data) # Regress the formula on the training data set
+  
+  df_training <- training_data %>% 
+    add_residuals(reg_results) %>%  # Adds a column of residuals to training_data called "resid"
+    summarize( MSE = mean(resid^2) ) # Computes the MSE of the training sample
+  training_MSE <- df_training[1,1]  # Get the training sample MSE as a number
+  
+  df_test <- test_data %>% 
+    add_residuals(reg_results) %>%  # Adds a column of residuals to test_data called "resid"
+    summarize( MSE = mean(resid^2) ) # Computes the MSE of the test sample
+  test_MSE <- df_test[1,1]  # Get the training sample MSE as a number
+  k <- length(X_name)  # Report the number of X s
+  return(c( k , training_MSE , test_MSE ))
+}
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+
+- Now, generate all the possible combinations of models with a provided set of variables. The function ***name_from_bin*** gathers the variable names corresponding to a sequence of 1 and 0 matching the ***vars*** vector of variable names. If it is a 1, show the variable, otherwise don't
+
+\small
+
+```{r, message = FALSE, results = "hide"}
+# Function to help get all the possible combination of variables
+# It takes names from a vector according to where the 1 are
+name_from_bin <- function(b, vars){
+  return(vars[as.logical(b)])
+}
+```
+
+```{r}
+# Example
+X <- c("age", "ethnicity", "marital status")
+selector <- c(1, 0, 1) # We want to get the first and third characters
+name_from_bin(selector, X)
+```
+
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- And ***all_models*** makes all the possible combinations of $\bm{X}$'s we provide, and returns a list of combinations
+
+```{r, message = FALSE, results = "hide"}
+# Function that generates all the possible models with a set of variables
+all_models <- function(variables){
+  # How many variables in "variables"?
+  K <- length(variables)
+  # Use binary representation
+  bin_vec <- rep(list(0:1), K)
+  # Makes vectors of 1 and 0
+  # Consider all of the different combinations, except the empty model. 
+  # There will be 2^K - 1 combinations
+  bin_mat <- expand.grid(bin_vec)[-1, ]
+
+  # Initialize the results. The loop will fill that list
+  list_of_RHS <- list()
+  # Fill up the list by looping over all combinations
+  for(i in 1:nrow(bin_mat)){
+    list_of_RHS[[i]] <- name_from_bin(bin_mat[i, ], variables)
+  }
+  return(list_of_RHS) # Each row of that list is a combination of covariates
+}
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- Let us define all the variables we need for the RHS of the regressions
+
+```{r, message = FALSE, results = "hide"}
+# Show all the X's to consider. Here, we exclude column 1 and the "Balance" column as it is our Y
+max_X <- colnames(Credit_1)[-c(1, which(colnames(Credit_1)=="Balance"))]
+max_X
+```
+- Let us check some of the combinations (how many are there in total?)
+
+```{r}
+all_models(max_X)[12:15]
+```
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- Finally, assemble all the functions into a single one, that will do all the steps above:
+
+
+```{r, message = FALSE, results = "hide"}
+# function that estimates all the possible models and computes the test MSE
+all_subset_regression <- function(covariates_to_consider, y_var, train_dat, test_dat)
+  {
+  models_to_consider <- all_models(covariates_to_consider) # Makes all the possible combos
+  
+  # For each combo, run lm() and compute the training and test MSE
+  # Map() is a function that loops over stuff in a more efficient way than "for"
+  # It maps "models_to_consider" as "X_name" in the function "MSEs", 
+  # and we add the other arguments of the MSEs function 
+  results <- map(models_to_consider, MSEs, Y_name = y_var, training_data = train_dat,
+                 test_data = test_dat) 
+  # The "results" will be a list of 3 columns. 
+  # First one is the number of X, second is the training MSE, third is the test MSE
+  useful_results <- matrix(unlist(results), ncol = 3, byrow = TRUE) # Format the "results" nicely
+  useful_results <- as_tibble(useful_results)
+  names(useful_results) <- c(
+    "num_vars",
+    "training_error","test_error")
+  return(useful_results)
+}
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+- Let's do it!
+
+\scriptsize
+
+```{r, message = FALSE, warning = FALSE, results = "hide"}
+performances <- all_subset_regression(covariates_to_consider = max_X,
+                                      y_var = "Balance",
+                                      train_dat = Credit_1, 
+                                      test_dat = Credit_2)
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- Now, let us check the training and test errors for each number of variables. Note that the smallest training error occurs for the maximum amount of variables 
+
+```{r, message = FALSE, warning = FALSE}
+min_k_train <- performances %>%
+  group_by(num_vars) %>% # Smallest training error per number of covariates used
+  summarise(min_training_error = min(training_error))
+min_k_train
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+\scriptsize
+
+- Now, let us check the training and test errors for each number of variables. Note that the smallest test error does not occur for the maximum amount of variables 
+
+```{r, message = FALSE, warning = FALSE}
+min_k_test <- performances %>%
+  group_by(num_vars) %>% # Smallest test error per number of covariates used
+  summarise(test_error = min(test_error))
+min_k_test
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+
+\begin{center}
+```{r, echo = FALSE, message = FALSE, warning = FALSE, out.width = '100%', fig.width = 20, fig.height = 8}
+ggplot(mapping = aes(x = num_vars, y = test_error)) + 
+  geom_point(data = performances, size = 4) + ylim(c(9000,10000)) +
+  geom_point(data = min_k_test, colour = "red", shape = 23, fill = "red", size = 5) +
+  xlab("Number of variables") +
+  ylab("Test error") +
+  scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) +
+  theme(axis.title.x = element_text(family = "serif", size = 25),       # Changes fonts into times new roman
+        axis.title.y = element_text(family = "serif", size = 25),
+        legend.text = element_text(family = "serif", size = 25),
+        legend.title = element_text(family = "serif", size = 25),
+                  axis.text = element_text(size = 22)   )  
+  # ggsave("test_error.png" )
+```
+\end{center}
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+- Which model has the lowest test error? Let us check
+
+```{r}
+which(performances$test_error == min(performances$test_error))
+```
+- That chunk of code does the same thing:
+
+```{r}
+which.min(performances$test_error)
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+
+- Which model is it? What $\bm{X}$'s are in it?
+
+\scriptsize
+```{r}
+performances[187, ]
+all_models(max_X)[[187]]
+```
+
+## Validation sets: Best model in \textbf{\textsf{Rstudio}}
+\tiny
+
+```{r, echo = FALSE}
+best_combi <- all_models(max_X)[[187]]
+final_model <- lm(gen_formula("Balance", best_combi), data = Credit_3)
+summary(final_model)
+```
+
+```{r, echo = FALSE, results = "hide"}
+Credit_3 <- Credit_3 %>%
+  add_predictions(final_model, var = "validation_sets_pred") %>%
+  mutate(forward_pred = forward_stepwise_pred)%>%
+  mutate(backward_pred = backward_stepwise_pred)%>%
+  mutate(best_subset_pred = best_subset_pred)%>%
+  mutate(pcr_pred = pcr_pred)%>%
+  mutate(plsr_pred = plsr_pred)
+```
+
+## Validation sets: Illustration in \textbf{\textsf{Rstudio}}
+- Let us compare the different approaches on the $3^{rd}$ data set
+
+\begin{center}
+```{r, echo = FALSE, message = FALSE, out.width = '100%', fig.width = 20, fig.height = 8}
+
+# out.width = 
+ggplot(data = Credit_3) +
+    geom_point(mapping = aes(x = Balance , y = validation_sets_pred, color = "validation"), size = 3) +
+    geom_point(mapping = aes(x = Balance , y = forward_pred, color = "forward"), size = 3) +
+    geom_point(mapping = aes(x = Balance , y = backward_pred, color = "backward"), alpha = 0.6, size = 3) +
+    geom_point(mapping = aes(x = Balance , y = best_subset_pred, color = "best subset"), alpha = 0.6, size = 3) +
+    geom_point(mapping = aes(x = Balance , y = plsr_pred, color = "PLSR"), alpha = 0.6, size = 3) +
+    geom_point(mapping = aes(x = Balance , y = pcr_pred, color = "PCR"), alpha = 0.6, size = 3) +
+
+   labs(color = 'Method')+
+    scale_color_manual( breaks = c( "backward",
+                                    "best subset",
+                                    "forward",
+                                    "PCR",
+                                    "PLSR",
+                                    "validation" ),       # Put them in alphabetical order, it is easier for colours.
+                          labels = c("Backward stepwise selection",
+                                     "Best subset selection",
+                                     "Forward stepwise selection",
+                                     "Principal components regression",
+                                     "Partial least squares",
+                                     "Validation sets"),
+                          values = c('chartreuse4',
+                                     'blue',
+                                     'red',
+                                     'darkcyan',
+                                     'cyan',
+                                     'purple'
+                                                )) +
+    xlab("Balance") +
+    # xlim(c(0, 1500)) +
+  # scale_x_discrete(limits = c(0, 1500)) +
+    ylab("Balance predictions")+
+     theme(axis.title.x = element_text(family = "serif", size = 25),       # Changes fonts into times new roman
+         axis.title.y = element_text(family = "serif", size = 25),
+         axis.text = element_text(size = 22),
+         legend.text = element_text(family = "serif", size = 25),  # could add ", face = "bold"  " for extra fancy
+         legend.title = element_text(family = "serif", size = 25)  
+         # legend.key.size = unit(1, 'cm'), #change legend key size
+         # legend.key.height = unit(1, 'cm'), #change legend key height
+         # legend.key.width = unit(1, 'cm'), #change legend key width
+         )
+```
+\end{center}
+
+## Root Mean Squared Error (RMSE) with each approach
+\scriptsize
+```{r}
+# Subset selection procedures
+best_subset_mse <- MSE(Credit_3$Balance, best_subset_pred)
+forward_mse <- MSE(Credit_3$Balance, forward_stepwise_pred)
+backward_mse <- MSE(Credit_3$Balance, backward_stepwise_pred)
+# Dimension reduction methods
+PCR_mse <-  MSE(Credit_3$Balance, pcr_pred)
+PLSR_mse <- MSE(Credit_3$Balance, plsr_pred)
+# Validation sets method
+validation_mse <- MSE(Credit_3$Balance, Credit_3$validation_sets_pred)
+```
+
+## Root Mean Squared Error (RMSE) with each approach
+<!-- \scriptsize -->
+```{r, echo = FALSE}
+MSE_results <- data.frame(Method = c("Best subset", "Forward stepwise", "Backward stepwise", "Principal components regression", "Partial least squares", "Validation sets"),
+                          RMSE = c(sqrt(best_subset_mse), sqrt(forward_mse), sqrt(backward_mse), sqrt(PCR_mse), sqrt(PLSR_mse), sqrt(validation_mse) ) )
+
+MSE_results <- MSE_results[order(MSE_results$RMSE, decreasing = FALSE), ]
+MSE_results
+```
+
+
+## $\bm{K}$-fold cross validation
+- Similar to validation sets, the sample is cut into a \textbf{training} part and a \textbf{test} part
+- Divide the data set in $\bm{K}$ groups, or \textbf{folds}
+- Put the first fold aside, use the $\bm{K-1}$ other folds to estimate the models, test their predictive power on the first fold
+- Repeat the same procedure with the second fold aside, and the first fold as part of the $\bm{K-1}$ folds
+- For each model, we obtain $\bm{K}$ \textbf{test MSE}
+- Choose the best model based on the \textbf{lowest average test MSE}
+- The $\bm{K-1}$ folds are used as training data sets, the $\bm{K^{th}}$ fold as the test data set
+
+## $\bm{K}$-fold cross validation
+- How to choose $\bm{K}$? We could use cross validation...
+- But that would introduce another parameter to optimize over. Talk about a rabbit hole
+- It is common to use $\bm{K = 10}$
+- If you have a model selection problem, and are not sure how to go about it, cross validation is **always** a good idea
+
+## Model averaging \label{model averaging}
+- \textbf{Model selection} is important if one cares about estimating coefficients (many of the procedures shown above are used for linear models)
+- If you only want to predict well, why would you care about choosing one variable over another?
+- \textbf{Model averaging} takes the average of predictions over different models 
+- It shows better predictive performances that a single model
+- Machine learning algorithms focus on prediction, so model averaging is used quite a lot
+- Heard of the Netflix competition? Model averaging is what the winners used
+
+
+## Model averaging in action
+- Let us average the predictions of the 4 best methods
+
+```{r, echo = FALSE}
+model_averaging_4 <- rowMeans(cbind(Credit_3$best_subset_pred, Credit_3$forward_stepwise_pred, Credit_3$plsr_pred, Credit_3$validation_sets_pred))
+
+model_averaging_4 <- MSE(Credit_3$Balance, model_averaging_4)
+
+MSE_results <- MSE_results %>% add_row(Method = "Model averaging (best 4)", RMSE = sqrt(model_averaging_4))
+
+MSE_results <- MSE_results[order(MSE_results$RMSE, decreasing = FALSE), ]
+MSE_results
+
+```
+

@@ -1,0 +1,594 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output: 
+  beamer_presentation: 
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+always_allow_html: true
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+# list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "party", "tree", "rpart", "rpart.plot", "np", "car", "modelr", "rdd")
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+library(crimedata)
+library(fivethirtyeight)
+library(ISLR)
+library(stargazer)
+# library(randomForest)
+library(party)
+library(tree)
+library(rpart)       # performing regression trees
+library(rpart.plot)  # plotting regression trees
+library(np)
+library(car)
+library(modelr)
+library(rdd)
+library(latex2exp)
+```
+
+## Disclaimer
+These notes are partly based on \href{https://mixtape.scunning.com/}{\textbf{Causal inference: The mixtape}} by Scott Cunningham. However I am entirely responsible for any error.
+
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## Causal inference
+- Economists are often interested in the impact of a policy on a given outcome, and might want to identify its impacts before implementing it
+- The same way pharmaceutical companies conduct trials before selling a drug, or medical doctors test treatments on a sample of patients
+- Some individuals might be subject to the policy (or the "treatment"), others not. And individuals can differ across various characteristics
+- The question is then: how to estimate the pure effect of the policy?
+- We want to make sure the difference in the outcome variable is not due to some particular characteristics of the treated individuals
+
+
+## Outline
+\label{outline}
+
+- \hyperlink{taxonomy}{ \textbf{Treatment effects taxonomy} }
+- \hyperlink{ATE}{ \textbf{Estimating average treatment effects}}
+- \hyperlink{did}{ \textbf{Difference-in-differences (DiD) estimators}}
+- \hyperlink{RDD}{ \textbf{Regression Discontinuity Design (RDD)}}
+- \hyperlink{synthetic control}{ \textbf{Synthetic control methods}}
+- Suggested readings: Chapters 4, 6, 7, 9, 10 in \href{https://mixtape.scunning.com/}{\textbf{Causal Inference}}
+
+##
+\begin{center}   
+\LARGE{\textbf{Definitions, assumptions and estimation} }
+\end{center}
+
+## Treatment effects taxonomy 
+\label{taxonomy}
+
+- Consider a binary variable, $\bm{D_i}$, that equals 1 if Mr. $\bm{i}$ is subject to the treatment, and 0 if he is not
+- We are interested in the impact of the treatment on an \textbf{outcome variable} $\bm{Y_i}$
+- Individuals subject to the treatment are part of the \textbf{treatment group}, and individuals who are not are part of the \textbf{control group}
+- Consider the \textbf{potential outcomes} $\bm{Y_i^1}$ and $\bm{Y_i^0}$ for individual $\bm{i}$: Those are the values of the outcome variable for Mr. $\bm{i}$ if he gets treated vs if he doesn't 
+- In the data, we only observe one or the other, as Mr. $i$ is either treated or not. What we observe is the \textbf{actual world}, what we do not observe is the \textbf{counterfactual world}: "\textbf{What} would have happened \textbf{if}..."
+- For each individual $\bm{i}$, define the unit-specific treatment effect $\bm{\delta_i = Y_i^1 - Y_i^0}$
+
+## Treatment effects definitions
+\begin{dfn*}[Treatment effects]
+We are interested in the following treatment effects:
+\begin{itemize}
+\item \textbf{Average Treatment Effect} is defined as
+\[
+\bm{\tau_{ATE} \equiv \mathbb{E}\left[Y_{i}^1\right]-\mathbb{E}\left[Y_{i}^0\right]}
+\]
+\item \textbf{Average treatment Effect on the treated (ATT)} is defined as
+\[
+\bm{\tau_{ATT} \equiv  \mathbb{E}\left[Y_i^1|D_i=1\right] - \mathbb{E}\left[Y_i^0|D_i=1\right]}
+\]
+\item The \textbf{Average Treatment Effect on the untreated (ATU)} is defined as
+\[
+\bm{\tau_{ATU} \equiv \mathbb{E}\left[Y_i^1|D_i=0\right]-\mathbb{E}\left[Y_i^0|D_i=0\right]}
+\]
+\end{itemize}
+\end{dfn*}
+
+## Treatment effects definitions
+- The $\bm{ATT}$ is the average treatment effect on the group that was assigned the treatment  
+- We cannot compute the $\bm{ATE}$, $\bm{ATT}$ and $\bm{ATU}$ as we only observe one outcome (we do not observe the \textbf{counterfactual outcomes})
+- But we can estimate them
+- Depending on the question, one or all parameters are of interest. The most common ones are $\bm{ATE}$ and $\bm{ATT}$
+
+## Treatment effects decomposition
+- Let $\bm{\pi}$ be the share of observations getting treatment
+- We observe a \textbf{sample analog} of the following: 
+\[
+\bm{\mathbb{E}\left[Y_{i}^1|D_i=1\right]-\mathbb{E}\left[Y_{i}^0|D_i=0\right]}
+\]
+which can be decomposed into 3 terms:
+
+- The $\bm{ATE = \tau_{ATE} = \mathbb{E}\left[Y_i^1 \right] - \mathbb{E}\left[Y_i^0  \right]}$
+- A \textbf{selection bias} $\bm{\mathbb{E}\left[Y_i^0 | D_i = 1  \right] - \mathbb{E}\left[Y_i^0 | D_i = 0  \right]}$
+- A \textbf{heterogeneous treatment effect bias} $\bm{\left(1 - \pi \right)\left(\tau_{ATT} - \tau_{ATU} \right)}$
+
+## Treatment effects decomposition
+- In words: What we are able to observe is:
+    - The pure average effect of the treatment ($\bm{ATE}$)  
+    - The average difference in outcomes for treated and non treated \textbf{if} no one had been treated (\textbf{selection bias})
+    - The weighted difference in the effect of the treatment on the treated and the untreated (if they had been treated): The \textbf{hetergoneous treatment effect bias}
+- The latter two effects are a problem: They are not due to the treatment itself, but to inherent characteristics that differ between treated and non treated units   
+- We cannot observe them, so we cannot subtract them to get an estimate of $\bm{ATE}$
+- But under some assumptions, they are equal to zero!
+
+## Causal inference assumptions
+\begin{assumption}[: Stable Unit Treatment Value Assumption (SUTVA)]\label{SUTVA}
+\begin{itemize}
+\item Potential outcomes of one individual are not affected by treatment status of any other individual
+\end{itemize}
+\end{assumption}
+
+\begin{assumption}[: Conditional Independence]\label{independence}
+$$\bm{Y_i^0,\, Y_i^1 \perp D_i|X_i} $$
+\begin{itemize}
+\item In words:
+ The treatment assignment is independent of the potential outcomes, i.e. it \textbf{was not assigned based on what could} happen to individuals if they were treated or not. 
+\end{itemize}
+\end{assumption}
+
+## Meaning of Assumption **\ref{independence}**
+
+- This assumption says that selection into treatment does not depend on potential outcomes, i.e. nobody got selected into the treatment or control group based on what could happen to the individual if treated or not
+- Example: Give a drug to someone knowing it will benefit them vs another violates independence, as there is another variable, a \textbf{confounder}, that affects who the drug is given to
+- The treatment must be assigned **"ignoring"** how each individual would respond
+- It guarantees that observations across treatment and control groups are comparable
+- Hence, there are many other names for that assumption: **Unconfoundedness**, **selection on observables**, **ignorability**
+
+
+## Implications of Assumption **\ref{independence}**
+
+- Assumption **\ref{independence}** means that
+\begin{align*}
+\bm{\mathbb{E}\left[ Y^1|D=1 \right] - \mathbb{E}\left[ Y^1|D=0 \right]} &\bm{= 0} \\
+\bm{\mathbb{E}\left[ Y^0|D=1 \right] - \mathbb{E}\left[ Y^0|D=0 \right]} &\bm{= 0}
+\end{align*}
+In words:
+- The average potential outcomes ($\bm{Y^1}$ and $\bm{Y^0}$) are the \textbf{same} for either the treatment or the control group
+- The average outcome had units been treated is the same when looking at the treatment group vs the control group
+- Assumption **\ref{independence}** implies there is \textbf{no selection bias} nor \textbf{heterogeneous treatment effect bias}
+- How to make sure it is satisfied? \textbf{Randomize} treatment assignment!
+
+## Estimating treatment effects
+- If Assumptions **\ref{SUTVA}** and **\ref{independence}** are satisfied, one can use linear regression tools and estimate the following model:
+$$\bm{Y_i = \beta_0 + \tau D_i  + u_i}$$
+With that regression (as $\bm{D_i}$ is uncorrelated with $\bm{u_i}$, i.e. it is **exogenous**): $\bm{\mathbb{E}[Y_i|D_i=1] - \mathbb{E}[Y_i|D_i=0]= \tau = \tau_{ATE}}$
+- So $\bm{\hat{\tau}}$ estimates $\bm{\tau_{ATE}}$
+- Standard hypothesis testing can be used to test the significance of $\bm{\tau}$, i.e. to test whether the treatment has a significant effect or not
+- One can control for additional covariates $\bm{X_i}$ as well (as long as they satisfy the standard OLS assumptions). It can increase the precision of the estimates via lower residual variance
+
+## Treatment effects: Illustration in \textbf{\textsf{Rstudio}}
+
+```{r, echo = FALSE, message = FALSE, results = "hide"}
+n <- 500
+x <- rnorm(n)
+u <- rnorm(n)
+tau <- 2     # The true treatment effect
+y1 <- rnorm(n, mean = tau)   # Potential outcome if treated
+y0 <- rnorm(n)               # Potential outcome if non treated
+d <- c(rep(1, n/2), rep(0, n/2))
+d <- sample(d, n, replace = TRUE)
+y <- 1 + d*y1 + (1 - d)*y0 + 3*x + u
+```
+
+## Treatment effects: Selection bias in \textbf{\textsf{Rstudio}}
+\tiny
+```{r, message = FALSE}
+# If treatment is based on potential outcome
+# i.e. if it depends on what could happen if treated
+d_pot <- ifelse(y1 > 3, 1, 0)
+ate_pot <- lm(y ~ d_pot + x)
+summary(ate_pot)
+```
+
+## Treatment effects: Consistent estimation in \textbf{\textsf{Rstudio}}
+\tiny
+```{r, message = FALSE}
+# If treatment is random
+ate <- lm(y ~ d + x)
+summary(ate)
+```
+
+## Dealing with confounding variables
+- The presence of confounding variables stays the main problem for the estimation of treatment effects
+- Example: Cochran (1968) reports data that has a higher death rate among cigars/pipes smokers than among cigarettes smokers
+- Strange! Smoking cigars or pipes implies **not inhaling**, so less tar should reach the lungs for cigar/pipes smokers
+- Some variables are confounding the effect of smoking cigars or pipes vs cigarettes: Age
+- It turns out, those who smoke cigars and pipes are older than those who smoke cigarettes, so their higher death rate is not due to what they smoke, but other factors related to their age
+- Result: It looks like more people die from smoking cigars and pipes than cigarettes
+
+## Subclassification
+- We can reduce the bias due to selection into treatment by weighting averages according to the confounding variables. Let's call them $\bm{X}$
+- In the example above: Divide the data by **age** groups as age is the confounding variable. If the distribution of cigarettes and cigars/pipes smokers differs by age groups, we say the age distribution is **imbalanced**
+- Say, 50\% of cigarette smokers are under 50 years old (20 deaths recorded per 100,000), and 50\% are above (45 deaths recorded per 100,000)
+- 20\% of cigar smokers are under 50 years old, 80\% are above 
+- Unbalanced mortality rate: $\bm{20 \times 50\% + 45 \times 50\% = 32.5}$
+- Balanced mortality rate: $\bm{20 \times 20\% + 45 \times 80\% = 40}$
+
+## Subclassification
+- In words: If cigarette smokers had the same age distribution as cigar smokers, the mortality rate would be $\bm{40}$ deaths per 100,000 people
+- The method is simple, and allows to make groups comparable with respect to the confounding variables
+- But as the number of confounders increases (dimension of $\bm{X}$), we end up with more and more subgroups, for which we might not have observations from the treatment or control group
+- An important assumption is violated: **Common support**
+\begin{assumption}[: Common support]\label{common support}
+$$\bm{0 < \mathbb{P}(D_i = 1|X) < 1 \,\,\, \forall x \in \chi} $$
+\begin{itemize}
+\item In words: The probability of being treated given any value of $\bm{X}$ must be positive
+\end{itemize}
+\end{assumption}
+
+## Matching
+- Subclassification is simple, but it becomes quite cumbersome if there are many confounding variables
+- If observations between control and treatment groups are somewhat similar regarding the confounding variables, we can **match** them one on one 
+- Look for observations in both groups that have the same value of $\bm{X}$ (**exact matching**), or "close" values of $\bm{X}$ in terms of distance (**approximate matching**)
+- If observation $\bm{i}$ has more than one match, take the average of $\bm{Y}$ for these matches to make one single counterfactual
+- Once every observation is matched, compute the difference between an observation in the treatment group and its match in the control group
+- The estimated average treatment effect is the average of these differences
+
+## Propensity score weighting
+- Matching is not flawless either, as exact matching can be difficult with many confounders, and approximate matching requires more data to find good matches (that will also require a bias correction)
+- **Inverse Propensity score weighting (IPW)** (Rubin, 1977) is a very popular alternative
+- Principle: Estimate the probability of being treated given $\bm{X}$ for each observation
+- Run a regression where the dependent variable is $\bm{D_i}$ (treatment variable is on the left hand side), the covariates are $\bm{X}$
+- Get $\bm{\hat{\mathbb{P}}( D_i = 1 | X_i)}$ for each $\bm{i}$
+
+## Propensity score weighting
+- The estimator becomes
+\[
+\bm{\hat{\tau}_{ATE} = \sum_{i \in \{D_i = 1\}} \frac{Y_i}{\hat{\mathbb{P}}( D_i = 1 | X_i)} - \sum_{i \in \{D_i = 0\}} \frac{Y_i}{1 - \hat{\mathbb{P}}( D_i = 0 | X_i)}  }
+\]
+- $\bm{\hat{\mathbb{P}}( D_i = 1 | X_i)}$ is a prediction! Machine learning methods can help with that
+- Prediction methods for binary variables will be needed (see lecture on Supervised learning: classification)
+
+## Randomized Control Trials (RCT)
+- To be able to estimate the $\bm{ATE}$ consistently and without bias, assumptions  **\ref{SUTVA}** and **\ref{independence}** need to hold
+- That can be achieved by carefully designing experiments so that:
+    - Treatment is **independent** of potential outcomes and other confounders
+    - The treatment doesn't create spillovers (**SUTVA**)
+- In practice, it requires careful preparation and financial investments. But once everything is controlled for, the results are easy to obtain and strongly reliable. RCTs in the economic literature include:
+    - Education programs: Give some kids access to some resources (internet in poor countries, financial/in-kind help) and estimate the change in education outcomes
+    - Development programs: Give access to clean water, sanitary equipment, etc on poor populations and estimate the change in health outcomes
+    - And many more!
+    
+##
+\begin{center}   \label{did}
+\LARGE{\textbf{Difference-in-differences methods} }
+\end{center}
+
+## Difference-in-differences (DiD) estimators
+- Many random experiments are "impractical, unfeasible, and maybe even unethical" (Scott Cunningham, \textit{Causal inference: The mixtape})
+- Think about detecting the sources of a disease. Would you make patients ingest a potentially infected compound?
+- And what if Assumption **\ref{independence}** (\textbf{independence}) is not satisfied?
+- We can rely on \textbf{natural experiments}, i.e. variations in some treatment variable that affects only some individuals over time and that occur naturally
+- Example: A law/policy is passed in a state/area but not another
+- Estimating the difference between the treatment group and the control group after the treatment happened will be biased because groups are \textbf{fundamentally different}
+
+## Difference-in-differences (DiD): Baseline setup
+- Two groups: The \textbf{treatment group} ($\bm{D = 1}$) and the \textbf{control group} ($\bm{D = 0}$)
+- Two time periods: \textbf{Before} the treatment ($\bm{T = 0}$) and \textbf{after} ($\bm{T = 1}$). The treatment group is treated between the two time periods, the control group is never treated
+- Assumption **\ref{SUTVA}** (\textbf{SUTVA}) is satisfied
+- If groups are different ex ante, then looking at the difference in average outcomes will include the effect of the treatment, but also other components that may have made groups evolve differently even without any treatment
+- What we are interested in estimating here is the $\bm{ATT}$
+
+## Difference-in-differences (DiD): Crucial assumptions
+\begin{assumption}[: Parallel trends]\label{parallel}
+The following is satisfied:
+\begin{align*}
+\bm{\mathbb{E}\left[ Y_i^0|D=1,\, T = 1 \right]} & \bm{- \mathbb{E}\left[ Y_i^0|D=1,\, T = 0 \right]} \\
+\bm{= \mathbb{E}\left[ Y_i^0|D=0,\, T = 1 \right]} &\bm{- \mathbb{E}\left[ Y_i^0|D=0,\, T = 0 \right]}
+\end{align*}
+\end{assumption}
+
+\begin{footnotesize}
+\begin{itemize}
+\item In words: The difference we observe between before and after for the control group is the \textbf{same} as for the treatment group if the treatment group had not been subject to the treatment (we do not observe the outcome variable if the treatment group is not treated)
+\item If Assumption \textbf{\ref{parallel}} is not satisfied, then the estimate of the effect of the treatment is not isolated, i.e. it will include a group specific variation over time
+\item This assumption is impossible to verify, as it assumes something about a counterfactual
+\item Evidence in favor of or against it can be shown however: Check trends between groups before the treatment happens
+\end{itemize}
+\end{footnotesize}
+
+## Difference-in-differences (DiD): Parallel trends
+\begin{center}
+\begin{figure}
+\resizebox {0.6\textwidth} {!}
+ {
+\input{parallel_trends}
+}
+\caption{Parallel trends between the \textbf{\color{darkcyan}treatment} and the \textbf{\color{DarkRed}control group}}
+\end{figure}
+\end{center}
+
+## Difference-in-differences (DiD): Estimation
+- From the graph above, one can guess how to estimate the $\bm{ATT}$ in 2 steps:
+    - Take the \textbf{difference between before and after for each group}. Without treatment and under parallel trends, that difference is the same for both groups, call it $\bm{{\color{SFUgold}a}}$. But the treated group has $\bm{{\color{darkcyan}ATT}}$ on top of it
+    - Take the \textbf{difference of the two differences}. Since the difference for the treated group is $\bm{{\color{darkcyan}ATT} + {\color{SFUgold}a}}$ and the difference for the control group is $\bm{{\color{SFUgold}a}}$, that second difference yields $\bm{{\color{darkcyan}ATT}}$
+- The first differences remove the fundamental difference between the treated and control group before treatment
+- The second difference removes the time variation component $\bm{{\color{SFUgold}a}}$
+- Being a difference in means, we can then conduct classical hypothesis testing on means to test the null hypothesis of no effect of the treatment
+
+## Difference-in-differences (DiD): Estimation decomposition
+\begin{center}
+\begin{figure}
+\resizebox {0.6\textwidth} {!}
+ {
+\input{did_labels}
+}
+\caption{DiD estimation decomposition}\end{figure}
+\end{center}
+
+## Difference-in-differences (DiD): Regression approach
+- One can estimate the same effect with a linear regression
+- Advantages:
+    - We can throw some $\bm{X's}$ to reduce omitted variable bias (especially by including covariates that vary over time)
+    - It will improve the precision of the DiD estimates via lower residual variance
+- Consider the following model:
+
+\[
+\bm{Y_{i,t} = \beta_0 + \tau D_i + \lambda D_t + \delta \left(D_i\times D_t  \right) + X_{i,t}^{\prime}\beta_1 + u_{i,t}}
+\]
+where:
+
+- $\bm{D_i}$ is a dummy variable for treated ($\bm{D_i = 1}$) vs non treated ($\bm{D_i = 0}$)
+- $\bm{D_t}$ is a dummy variable for after treatment ($\bm{D_t = 1}$) vs before ($\bm{D_t = 0}$)
+- $\bm{D_i\times D_t}$ is the interaction of treatment and period: It is equal to 1 \textbf{only for treated units after the treatment happened}
+
+## Difference-in-differences (DiD): Regression decomposition
+\[
+\bm{Y_{i,t} = \beta_0 + \tau D_i + \lambda D_t + \delta \left(D_i\times D_t  \right) + X_{i,t}^{\prime}\beta_1 + u_{i,t}}
+\]
+
+- The $\bm{ATT}$ is thus:
+\begin{align*}
+\bm{\left( \mathbb{E}\left[Y_i |D_i = 1,\, D_t = 1 ,\,X_{i,t} \right] - \mathbb{E}\left[Y_i |D_i = 1,\, D_t = 0 ,\,X_{i,t}  \right] \right)} \\
+\bm{- \left( \mathbb{E}\left[Y_i |D_i = 0,\, D_t = 1 ,\,X_{i,t} \right] - \mathbb{E}\left[Y_i |D_i = 0,\, D_t = 0 ,\,X_{i,t}  \right] \right)} \\
+\bm{= \left({\color{darkolivegreen}\beta_0} + {\color{orange}\tau} + {\color{SFUgold}\lambda} + {\color{darkcyan}\delta} + {\color{red}X_{i,t}^{\prime}\beta_1} - \left({\color{darkolivegreen}\beta_0} + {\color{orange}\tau} + {\color{red}X_{i,t}^{\prime}\beta_1}  \right)    \right)} \\
+\bm{- \left( {\color{darkolivegreen}\beta_0} + {\color{SFUgold}\lambda} + {\color{red}X_{i,t}^{\prime}\beta_1}  - \left({\color{darkolivegreen}\beta_0} + {\color{red}X_{i,t}^{\prime}\beta_1}  \right) \right)} \\
+\bm{= {\color{darkcyan}\delta}}
+\end{align*}
+
+## Difference-in-differences (DiD): Regression decomposition
+\begin{center}
+\begin{figure}
+\resizebox {0.6\textwidth} {!}
+ {
+\input{parallel_trends_with_labels}
+}
+\caption{DiD estimation decomposition}\end{figure}
+\end{center}
+
+
+## Natural experiments in practice
+- There are many natural experiments to observe and take advantage from. Units are different but one needs to make sure they have parallel paths in the absence of treatment
+    - A country/state passes a law. Other states/countries around don't: health care programs, Iimmigration laws, minimum wage laws, covid-19 related practices (lockdowns, safety rules, vaccines roll outs)
+- If there is another source of variation that differs across groups (so another potential confounder), one can use a \textbf{Dif-in-dif-in-difs} estimator!! 
+- It would come with another parallel trends assumption...
+
+##
+\begin{center}  \label{RDD}
+\LARGE{\textbf{Regressions Discontinuity Designs} }
+\end{center}
+
+## Regression Discontinuity Designs (RDD) 
+- Consider a variable $\bm{X}$ that determines whether someone will receive a treatment or not at a cutoff point $\bm{c_0}$. Such a variable is called the \textbf{running variable}
+- $\bm{X}$ is obviously a \textbf{confounder} since it determines treatment
+- Comparing treatment and control groups will lead to a biased estimation
+- Example: a GPA cutoff of 3.5 to receive a scholarship. Those above 3.5 would do better than those below 2.5 even without the scholarship, so comparing these students is meaningless
+- What about comparing those at 3.4 (hence not receiving the scholarship) vs those at 3.6 (hence receiving the scholarship)
+- We are talking about \textbf{Local Average Treatment Effect (LATE)}
+
+## Regression Discontinuity Design: Continuity assumption
+\begin{assumption}[: Continuity]\label{continuity}
+$\bm{\mathbb{E}\left[Y_i^0 | X_i = c_0   \right]}$ and $\bm{\mathbb{E}\left[Y_i^1 | X_i = c_0   \right]}$ are continuous functions of $\bm{X_i}$
+\end{assumption}
+- In words: At $\bm{X_i = c_0}$, the average \textbf{potential} outcomes do not jump
+- If they do jump, then it means there is something other than crossing that threshold creating an impact
+- We can't directly test that assumption, but knowledge of the circumstances around the treatment can help build a case
+
+
+## Regression Discontinuity Design: Estimation
+- It is then relevant to consider observations close to the cutoff point
+- Observations below the threshold, i.e. the control group, can constitute a good counterfactual for the ones above the threshold, i.e. the treatment group
+- Procedure: Estimate a regression of $\bm{Y_i}$ on $\bm{X_i}$ on either side of the cutoff \textbf{separately}
+- The estimate of the $\bm{LATE}$ is given by $\bm{\hat{\tau}_{LATE}=\hat{y}_i^+-\hat{y}_i^-}$ where $\bm{\hat{y}_i^+}$ is the prediction at $\bm{X_i=c_0}$ from the right regression, and $\bm{\hat{y}_i^-}$ is the prediction at $\bm{X_i=c_0}$ from the left regression
+
+## Regression Discontinuity Design: Illustration
+```{r, results = "hide", echo = FALSE}
+# Generating data according to a RDD. Slopes are different on either side of the threshold
+n <- 500   # sample size
+u <- rnorm(n)  # generating the error term. Normal distribution here
+x <- rnorm(n, mean = 50)  # generating the explanatory variable. Normal distribution here
+# beta_0 <- c(1, 2)   # an intercept and a coefficient on x.
+c <- 50 # The threshold for the running variable
+beta_0 <- 1
+beta_1 <- 1
+beta_2 <- 1
+beta_3 <- c*(4/5)
+y <- beta_0 + beta_1*x + beta_2*(x - beta_3)*ifelse(x > c, 1, 0) + u  # here we are creating the dependent variable y
+Treatment <- ifelse(x > c, "Yes", "No")
+data <- tibble(y, x, Treatment, u)
+```
+\begin{center}
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(data = data) +
+  geom_point(mapping = aes(x = x, y = y, colour = Treatment), alpha = 0.5, size = 3)+
+  geom_vline(xintercept = c, linetype = "dashed", color = "blue", size = 1.5)+
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22),
+  axis.text = element_text(size = 20    ))  +
+  scale_color_discrete(name = "Groups", labels = c("Control", "Treatment")) +
+  xlab(TeX("$X_{i}$")) +
+  ylab(TeX("$Y_i$")) 
+```
+\end{center}
+
+## Regression Discontinuity Designs: Illustration
+\begin{center}
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+data %>%
+  mutate(D = as.factor(ifelse(x >= c, 1, 0))) %>%
+  ggplot(aes(x = x, y = y, color = D)) +
+  geom_point(alpha = 0.5, size = 3) +
+  geom_vline(xintercept = c, linetype = "dashed", color = "blue", size = 1.5)+
+  geom_smooth(method = "lm", se = FALSE, size = 2)+
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22 ),
+  axis.text = element_text(size = 20    ))  +
+  scale_color_discrete(name = "Groups", labels = c("Control", "Treatment")) +
+  xlab(TeX("$X_{i}$")) +
+  ylab(TeX("$Y_i$")) 
+  # theme(legend.position = "none")
+```
+\end{center}
+
+## Regression Discontinuity Design: Beyond linearity
+- Why use $\bm{X_i}$ linearly on either side of the cutoff point?
+- We are building predictions to take a difference here, so we can allow for more flexible estimators to catch patterns beyond linearity 
+    - Polynomial estimators: Include $\bm{X_i^2}$, $\bm{X_i^3}$ in the regressions to add curvature
+- Nonparametric estimators offer more flexibility
+    - Kernel estimators
+    - Splines
+    - K-nearest neighbors estimators
+
+## Regression Discontinuity Design: beyond linearity
+```{r, results = "hide", echo = FALSE}
+dat <- tibble(
+    x = rnorm(n, mean = 10, sd = 5)
+  ) %>% 
+  mutate(
+    x = case_when(x < 0 ~ 0, TRUE ~ x),
+    D = case_when(x > 14 ~ 1, TRUE ~ 0),
+    x2 = x*x,
+    x3 = x*x*x,
+    y3 = 100 + 100 * D - 10 * x + .8*x2 + (x/(x-20))*ifelse(x < 14, 1, 0) + rnorm(n, mean = 0, sd = 10)
+  ) %>% 
+  filter(x < 280) 
+dat <- dat %>% mutate(Treatment = ifelse(D==1, "Yes", "No"))
+
+```
+
+\begin{center}
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(aes(x, y3, colour = Treatment), data = dat) +
+  geom_point(alpha = 0.5, size = 3) +
+  geom_vline(xintercept = 14, linetype = "dashed", color = "blue", size = 1.5)+
+  stat_smooth(method = "lm", se = F, size = 2) +
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22),
+  axis.text = element_text(size = 20    ))  +
+  scale_color_discrete(name = "Groups", labels = c("Control", "Treatment")) +
+  xlab(TeX("$X_{i}$")) +
+  ylab(TeX("$Y_i$")) 
+
+```
+\end{center}
+
+## Regression Discontinuity Design: beyond linearity
+
+\begin{center}
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(aes(x, y3, colour = Treatment), data = dat) +
+  geom_point(alpha = 0.5, size = 3) +
+  geom_vline(xintercept = 14, linetype = "dashed", color = "blue", size = 1.5)+
+  stat_smooth(method = "loess", se = F, size = 2) +
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22),
+  axis.text = element_text(size = 20)   )  +
+  scale_color_discrete(name = "Groups", labels = c("Control", "Treatment"))+
+  xlab(TeX("$X_{i}$")) +
+  ylab(TeX("$Y_i$")) 
+```
+\end{center}
+
+
+## Regression Discontinuity Design: Fuzzy RDD
+- The RDD we considered so far is called \textbf{sharp RDD}, where the treatment goes from 0 to 1 as soon as the threshold is crossed
+- Sometimes, the \textbf{probability} of being treated after crossing the threshold jumps, but not all the way to 1. So not everybody above the threshold gets treated
+- It is called \textbf{fuzzy RDD}
+- We still need assumptions **\ref{SUTVA}** and **\ref{continuity}** to be satisfied
+- $\bm{\tau_{LATE}}$ can be estimated via 2SLS. Let $\bm{Z_i}$ be a dummy variable equal to 1 if $\bm{X_i>c_0}$, 0 otherwise. It is our **instrument**! Then:
+    - Regress $\bm{D_i}$ on $\bm{Z_i}$ and combinations of $\bm{X_i}$ (like polynomial for instance). Get $\bm{\hat{D}_i}$
+    - Regress $\bm{Y_i}$ on $\bm{\hat{D}_i}$ and the $\bm{X_i}$ after re-centering them around $\bm{c_0}$
+
+<!-- ## Regression Discontinuity Design: Challenges to identification -->
+
+
+##
+\begin{center}  \label{synthetic control}
+\LARGE{\textbf{Synthetic control} }
+\end{center}
+
+## Synthetic control
+- So far, we have compared the average outcome between treatment and control groups, hoping (or knowing thanks to the above assumptions) that the control group can constitute a good \textbf{counterfactual} for the treatment group, i.e. that the control group somehow reflects how the outcome would have been for the treatment group units had they not been treated
+- What if we don't have a plausible counterfactual, i.e. a unit to compare the treatment group to?
+- Abadie and Gardeazabal (2003) studied the impact of terrorism in the Basque Country (my home!!) on economic activity
+- The occurrence of terrorism acts as treatment, but there is no counterfactual Basque country for which no terrorism happened
+- So they created a "\textbf{synthetic Basque country}", i.e. a Basque country without terrorism by computing a combination of other regions of Spain that resembles the Basque country before terrorism, and compared the two units
+
+## Synthetic control
+- Idea: Optimally choose a set of \textbf{weights} on the control units such that the resulting \textbf{synthetic units} are close to the characteristics of the treated units in the pre-treatment period
+- In the post-treatment period, the synthetic units' outcomes will be the combination of the control units' outcomes
+- Then, each treated unit has its own synthetic unit. Take the difference to estimate the \textbf{ATT}
+- Very powerful when only few units are treated, like a country/state/province who passes a law. Synthetic control can produce a better counterfactual for a treated unit than the control units (imagine comparing a treated country to other countries)
+
+## Synthetic control: Model and (simplified) procedure
+- Let $\bm{Y_{t}}$ be the outcome variable at time $\bm{t=1,...,T}$
+- Denote $\bm{i}$ for treated units, and $\bm{j}$ for control units
+- The treatment happens at some time $\bm{T_0}$, so periods where $\bm{t<T_0}$ are pre-treatment periods and periods where $\bm{t>T_0}$ are post-treatment periods
+- For a treated unit, we are interested in $\bm{\alpha_{i,t}}$ for $\bm{t>T_0}$
+- Let $\bm{X_{i,t}}$ be the vector of $\bm{k}$ covariates that are unaffected by the treatment for unit $\bm{i}$. Let $\bm{X_0}$ be the matrix of covariates gathering the control units vectors $\bm{X_j}$
+- Let $\bm{W}$ be a vector of weights of the size of the control units (one weight per control unit). Each treated unit will have a synthetic unit with a different $\bm{W}$
+
+## Synthetic control: Model and (simplified) procedure
+
+- The vector of optimal weights for a treated unit $\bm{i}$ minimizes the distance between $\bm{i}$'s covariates and the synthetic ones $\bm{X_0W}$, i.e. $\bm{W_i^*}$ solves:
+\[
+\bm{{\underset{\{W_i\}}{\min} \|X_i - X_0W_i\|}}
+\]
+- subject to the constraints that the weights add up to one, and are positive or null
+- For a treated unit $\bm{i}$, the estimated effect for $\bm{t>T_0}$ is
+\[
+\bm{\hat{\alpha}_{i,t}=Y_{i,t}-\sum_{j}w_{i,j}^*Y_{j,t}}
+\]
+where $\bm{j}$ represents units in the control group
+
+- Repeat the same process for each treated unit
+
+## Treatment effects: Summary
+- Assumption **\ref{SUTVA}** (SUTVA) is needed no matter the setting
+- If Assumption **\ref{independence}** (Conditional independence or unconfoundedness or ignorability) is satisfied, a simple OLS regression estimates $\bm{\tau_{ATE}}$ or a difference in means!
+- If there are confounders, subclassification, matching and inverse propensity score weighting are alternatives to alleviate the selection bias as long as we have Assumption **\ref{common support}** (common support)
+- Natural experiments include confounders, but if Assumption **\ref{parallel}** (parallel trends) is satisfied, we can use Dif-in-difs to estimate $\bm{\tau_{ATT}}$
+- If a treatment is **determined** by a confounder, we can look at treatment effects **locally** using Regression discontinuity designs to estimate $\bm{\tau_{LATE}}$. We need Assumption **\ref{continuity}** (continuity) to estimate that effect 
+- When no observations can be used as a plausible counterfactual. a **synthetic unit** can be created to estimate $\bm{\tau_{ATT}}$
+
+
+## Treatment effects: Takeaways
+- The literature on treatment effects is vast
+    - Different experimental designs
+    - Different assumptions
+    - Different ways to handle standard errors (clustering, bootstrapping, etc)
+- Program evaluation methods are implemented by many organizations and governments. You could be working with doctors to design of experiments to test the effect of drugs or living conditions on health outcomes!    
+- The choice of one method over another depends on the experimental designs: What assumptions are satisfied?
+- At the end of the day, we want to **predict** the effect of a policy on an outcome variable
+- So there is room for machine learning algorithms!
+

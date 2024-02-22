@@ -1,0 +1,546 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output: 
+  beamer_presentation: 
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+always_allow_html: true
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+# list.of.packages <- c("tidyverse","rmarkdown","nycflights13", "lubridate", "crimedata", "Lock5Data", "fivethirtyeight", "stargazer", "ISLR", "randomForest", "party", "tree", "rpart", "rpart.plot", "np", "car", "modelr", "FactoMineR", "pls")
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(glmnet)
+library(np)
+library(pls)
+library(rmarkdown)
+library(nycflights13)
+library(lubridate)
+library(Lock5Data)
+library(crimedata)
+library(fivethirtyeight)
+library(ISLR)
+library(stargazer)
+# library(randomForest)
+# library(party)
+# library(tree)
+# library(rpart)       # performing regression trees
+# library(rpart.plot)  # plotting regression trees
+library(FactoMineR)
+# library(car)
+library(latex2exp)
+library(modelr)
+library(FNN)    # Nearest neighbour methods
+```
+
+## Disclaimer
+
+I do not allow this content to be published without my consent.
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## Introduction
+
+- Linear estimators are estimators whose fitted values are obtained by taking a linear combination of the dependent variable observations $\bm{y_i}$
+- In the OLS case, the weights are computed based on the covariances between $\bm{x_i}$ and $\bm{y_i}$
+- The OLS estimator is a **global estimator**: It considers all the data at once and produces one estimation
+- Nonparametric methods are **local**: Free of parametric restrictions about the functional form of the regression function, they can estimate the regression function at a point by considering nearby data
+- By nearby data, we mean data close in terms of the covariates
+- Why use an observation of 60 years of age to estimate the regression function for someone who is 20 years of age?
+
+
+## Outline
+\label{outline}
+
+- \hyperlink{knn}{\textbf{K nearest neighbours} }
+    - \hyperlink{knn_principle}{\textbf{Principle} }
+    - \hyperlink{knn_properties}{\textbf{Properties} }
+    - \hyperlink{knn_selection}{\textbf{Neighbors selection} }
+    - \hyperlink{knn_r}{\textbf{Illustration in \textbf{\textsf{Rstudio}}} }
+- \hyperlink{kernel}{\textbf{Kernel estimators} }
+    - \hyperlink{kernel_principle}{\textbf{Principle} }
+    - \hyperlink{kernel_properties}{\textbf{Properties} }
+    - \hyperlink{kernel_selection}{\textbf{Bandwidth selection} }
+    - \hyperlink{curse}{\textbf{The curse of dimensionality } }
+    - \hyperlink{local linear}{\textbf{Local linear and local polynomial estimators} }
+    - \hyperlink{kernel_r}{\textbf{Illustration in \textbf{\textsf{Rstudio}}} }
+    - \hyperlink{other}{\textbf{Other nonparametric methods} }
+    
+
+##
+\begin{center}  \label{knn}
+\LARGE{\textbf{K Nearest Neighbours} }
+\end{center}
+
+## K Nearest Neighbors methods
+\label{knn_principle}
+
+- **K nearest neighbors (KNN)** methods estimate $\bm{f(x_0)}$ by computing an average of the $\bm{y_i}$ whose $\bm{x_i}$ are the closest to the value $\bm{x_0}$
+- Let $\bm{\mathcal{N}_0}$ be the set of $\bm{K}$ observations that are the closest to $\bm{x_0}$. The estimator is defined as
+\[
+\bm{\hat{f}(x_0) = \frac{1}{K} \sum_{i \in \mathcal{N}_0} y_i}
+\]
+- All the other observations are **not** used to compute $\bm{\hat{f}(x_0)}$
+
+## KNN properties
+\label{knn_properties}
+
+- KNN methods are **consistent**, as long as the number of nearest neighbors $\bm{K}$ increases as the sample size $\bm{n}$ increases
+- Idea: To keep capturing the main patterns without overfitting, the number of neighbors must increase to lower the bias, **but not too fast** to keep the variance under control
+- There is an **asymptotic distribution** for $\bm{\hat{f}(x_0)}$, so we can make inference (hypothesis tests and confidence intervals) about the true value $\bm{f(x_0)}$
+- There are many other applications of nearest neighbors methods, but they are not very popular in Economics...
+<!-- - Kernel methods are! -->
+
+## KNN properties (cont'd)
+- The choice of $\bm{K}$ is crucial
+    - If $\bm{K = 1}$: The prediction $\bm{\hat{f}(x_0)}$ is the observation $\bm{y}$ that has the closest $\bm{x}$ to $\bm{x_0}$. If $\bm{x_0}$ is a point of the data set, its prediction is its corresponding $\bm{y_0}$: **Extreme interpolation** (low bias, high variance)\
+\textbf{\color{SFUblue} $\bm{\Rightarrow}$ Overfitting}
+    - If $\bm{K = n}$: The prediction is the average point of the whole sample: $\bm{\bar{y}}$. And **every** prediction is equal to that average: **Extreme smoothing** (high bias, low variance)\
+\textbf{\color{SFUblue} $\bm{\Rightarrow}$ Underfitting}
+- The optimal $\bm{K}$ is the one that minimizes a MSE type objective function to find the best bias-variance tradeoff
+- If $\bm{X_i}$ is of dimension $\bm{q}$, then the closest observations $\bm{i}$ are defined as the ones for which $\bm{x_i}$ is the closest to $\bm{x_0}$ in terms of Euclidean distance:
+\[
+\bm{\|x_0 - x_i\| \equiv \sqrt{(x_{0,1} - x_{i,1})^2 + ... + (x_{0,q} - x_{i,q})^2}}
+\]
+
+## K Nearest Neighbors methods with weights
+- It is also possible to weigh the observations differently than "in" (and then equal weight) or "out" (and then no weight)
+- An observation that is close to the point we try to predict should get a higher weight, and an observation that is far should count less
+- Let $\bm{w_i(x_0)}$ be a weight function such that $\bm{\sum_{i=1}^n w_i(x_0) = 1}$
+- The estimate becomes 
+\[
+\bm{\hat{f}(x_0) = \sum_{i =1}^n w_i(x_0) y_i}
+\]
+
+## Selecting the optimal amount of Neighbors
+\label{knn_selection}
+
+- The number of nearest neighbors $\bm{K}$ has to mitigate the bias and the variance at the same time
+- There exist different objective functions, but we will focus on the **leave-one-out cross validation** criterion function (Stone, 1964), where $\bm{\hat{k}}$ minimizes
+\[
+\bm{CV(k) \equiv \sum_{i=1}^n (y_i - \hat{f}_{-i}(x_i))^2}
+\]
+- $\bm{\hat{f}_{-i}(x_i)}$ is called the **leave-one-out** estimator of $\bm{f(x_i)}$. It is the estimate of $\bm{f(x_i)}$ without using observation $\bm{i}$ in the process $\bm{\Rightarrow}$ Observation $\bm{i}$ plays the role of test sample!
+- It is equivalent to K-fold cross validation, but there are $\bm{n}$ folds: Use all the sample but observation $\bm{1}$ to estimate $\bm{f(x_1)}$, then all the sample but observation $\bm{2}$ to predict $\bm{f(x_2)}$, ...
+- Instead of K MSEs to average over as in the model selection lecture, we now have $\bm{n}$ MSEs to average over
+
+
+## Illustration in \textbf{\textsf{Rstudio}}: The ***FNN*** package
+\label{knn_r}
+
+- The ***FNN*** package allows to compute nearest neighbors estimates of all kind: Choose the number of neighbors by hand or automatically (by minimizing the leave-one-out CV criterion or other relevant criterion)
+- ***knn.reg*** is particularly useful: Specify the dependent variable $\bm{Y_i}$, specify the training data set (data used to get the estimates), the test data set (the data $\bm{y_i}$ we try to predict using the corresponding $\bm{X_i}$), and the algorithm to find the optimal amount of neighbors (you can leave it at its default value)
+
+```{r, echo = FALSE}
+n <- 200
+x <- rnorm(n)
+u <- rnorm(n)
+y <- sin(x) - cos(x) + log(abs(x))^2*exp(-x) + u
+data <- data.frame(y, x)
+```
+
+
+```{r}
+# K- nearest neighbors estimator
+knn_1 <- knn.reg(train = data, test = data, y = y, k = 1)
+knn_10 <- knn.reg(train = data, test = data, y = y, k = 10)
+knn_50 <- knn.reg(train = data, test = data, y = y, k = 50)
+knn_100 <- knn.reg(train = data, test = data, y = y, k = 200)
+```
+
+```{r, echo = FALSE}
+dat <- rep(y, times = 4)
+K <- c("K = 1", "K = 10", "K = 50", "K = 200")
+K <- rep(K, each = n)
+K <- as.factor(K)
+predictions <- matrix(t(rbind(knn_1$pred, knn_10$pred, knn_50$pred, knn_100$pred)), nrow = n*4, ncol = 1)
+dat <- data.frame(Y = dat, X = rep(x, times = 4), K, predictions)
+```
+
+## KNN regression in \textbf{\textsf{Rstudio}}
+\begin{center}
+
+```{r, echo = FALSE, message = FALSE, out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(data = dat, aes(x = X)) +
+  geom_point(mapping = aes(y = Y), alpha = 0.5, size = 3) +
+  geom_line(aes(y = predictions, color = K), size = 1.5) +
+  facet_wrap(~ factor(K, levels = c("K = 1", "K = 10", "K = 50", "K = 200"))) +
+  xlab(TeX("$x_{i}$"))+
+  ylab(TeX("$y_i$")) +
+    theme_minimal() +  # for style
+    theme(text = element_text(family = "serif")) +  # changes any text font into serif
+  
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22 ),
+  axis.text = element_text(size = 24    ))  +
+  theme(strip.text.x = element_text(size = 22))
+```
+\end{center}
+
+##
+\begin{center}  \label{kernel}
+\LARGE{\textbf{Kernel estimators} }
+\end{center}
+
+## Kernel estimators
+\label{kernel_principle}
+
+- Like the KNN estimators, kernel estimators are **linear** estimators:
+\[
+\bm{\hat{f}(x_0) = \sum_{i=1}^n w_{i}(x_0)y_i}
+\]
+- But observations get weights based on the distance from the value $\bm{x_0}$, not on a specific number of observations around $\bm{x_0}$
+- Consider a function $\bm{K\left(\frac{x_i - x_0}{h} \right)}$ where $\bm{h}$ is called the **bandwidth**. The function $\bm{K()}$ is called a **Kernel function** and has the following properties:
+    - It is **non negative**: $\bm{K(u)\geq 0\,\, \forall u}$ (no weight is negative)
+    - It is **symmetric**: $\bm{K(u) = K(-u)}$ (so observations at the same distance of $\bm{x_0}$ but on either side will get the same weight)
+- When $\bm{x_i}$ is close to $\bm{x_0}$, a higher weight is given: It is high when  $\bm{\frac{x_i - x_0}{h}}$ is small, and small when $\bm{\frac{x_i - x_0}{h}}$ is high
+
+## Kernel functions
+\begin{center}
+
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+# Kernel functions
+epanechnikov_kernel <- function (u)
+{
+  ker <- (3/4)*(1-u^2)*(as.numeric(I(abs(u)<=1)))
+  return (ker)
+}
+
+gaussian_kernel <- function (u)
+{
+  ker <- (1/sqrt(2*pi))*exp( -u^2 /2)
+  return (ker)
+}
+
+rectangular_kernel <- function (u)
+{
+  ker <-  0.5*(as.numeric(I(abs(u)<=1)))
+  return (ker)
+}
+
+triangular_kernel <- function (u)
+{
+  ker <-  (1 - abs(u))*(as.numeric(I(abs(u)<=1)))
+  return (ker)
+}
+
+quartic_kernel <- function (u)
+{
+  ker <-  (15/16)*(1 - u^2)^2*(as.numeric(I(abs(u)<=1)))
+  return (ker)
+}
+
+grid <- seq(-1.5, 1.5, 0.01)
+
+kernel_names <- c("Gaussian", "Epanechnikov", "Rectangular", "Triangular", "Quartic")
+values <- cbind(gaussian_kernel(grid), epanechnikov_kernel(grid), rectangular_kernel(grid), triangular_kernel(grid), quartic_kernel(grid))
+
+values <- matrix(values, nrow = length(grid)*5, ncol = 1)
+
+kernel_data <- data.frame("X" = rep(grid, times = 5), Kernels = as.factor(rep(kernel_names, each = length(grid))), "Values" = values)
+
+ggplot(data = kernel_data, aes(x = X))+
+  geom_line(aes(y = Values, color = Kernels), size = 3) +
+    xlab(TeX("$x$"))+
+    theme_minimal() +  # for style
+    theme(text = element_text(family = "serif")) +  # changes any text font into serif
+  
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22 ),
+  axis.text = element_text(size = 24 ))  +
+
+  facet_wrap(~ Kernels)+
+    theme(strip.text.x = element_text(size = 22))
+```
+\end{center}
+
+## Kernel estimators
+- The weights $\bm{w_i(x_0)}$ are obtained as
+\[
+\bm{w_i(x_0) = \frac{ K\left(\frac{x_i - x_0}{h} \right)}{\sum_{j=1}^n K\left(\frac{x_j - x_0}{h} \right)} }
+\]
+and the estimator is called the **Nadaraya-Watson (1964) estimator** or **local constant estimator**
+
+- We can see that the weights sum to 1: $\bm{\sum_{i=1}^n w_i(x) = \sum_{i=1}^n \frac{K\left(\frac{x_i - x}{h} \right)}{\sum_{j=1}^n K\left(\frac{x_j - x}{h} \right)}= \frac{\sum_{i=1}^nK\left(\frac{x_i - x}{h} \right)}{\sum_{j=1}^n K\left(\frac{x_j - x}{h} \right)}=1}$
+
+## Kernel estimators as least squares estimators
+- It turns out that kernel estimators can be seen as least squares estimators!
+\[
+\bm{{\underset{\{a\}}{\min}\sum_{i=1}^n (y_i - a)^2 K\left(\frac{x_i - x_0}{h}\right) }}
+\]
+<!-- - Each observation is **weighted** by $\bm{w_i(x)}$  -->
+- Take the FOC w.r.t $\bm{a}$ to get:
+\begin{align*}
+\bm{2\sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)(y_i - \hat{a})} & \bm{= 0}   \\
+\bm{ \sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)y_i} & \bm{= \sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)\hat{a}}   \\
+%\bm{ \sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)y_i} & \bm{= \hat{a} \sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)}  \\ 
+\bm{ \hat{a} = \frac{\sum_{i=1}^n y_i K\left(\frac{x_i - x_0}{h}\right)}{\sum_{i=1}^n K\left(\frac{x_i - x_0}{h}\right)}}
+\end{align*}
+
+## Kernel estimators vs nearest neighbors estimators
+- The straightforward KNN estimator can be seen as the solution to
+\[
+\bm{{\underset{\{a\}}{\min}\sum_{i \in \mathcal{N}_0}^n (y_i - a)^2 }}
+\]
+where $\bm{\mathcal{N}_0}$ is the set of observations in the neighborhood of $\bm{x_0}$ 
+
+- Nearest neighbors have a **fixed number of observations** around $\bm{x_0}$, whereas kernel methods have a **fixed window** around $\bm{x_0}$
+- If one uses weights for KNN estimator, the formula looks pretty similar to the local constant estimator! The neighbors and bandwidth are different concepts, but they play the same role
+- With little data, nearest neighbors might include observations that are far from $\bm{x_0}$ while kernel methods might only include one observation or two... In both cases, accuracy will be low
+
+## Kernel estimators: Properties
+\label{kernel_properties}
+
+- The problem with accurate predictions using nearby observations is how close the nearby observations are
+- A small bandwidth $\bm{h}$ will imply $\bm{K\left(\frac{x_i - x}{h} \right)}$ will be small as soon as $\bm{x_i}$ is a bit far form $\bm{x}$ 
+$\bm{\Rightarrow}$ Only very nearby observations have a substantial contribution in estimating $\bm{f(x)}$: The estimation is **more local**, **less global**
+- A big bandwidth $\bm{h}$ will imply $\bm{K\left(\frac{x_i - x}{h} \right)}$ will be big as soon as $\bm{x_i}$ is different form $\bm{x}$ 
+$\bm{\Rightarrow}$ All the observations will have a similar contribution in estimating $\bm{f(x)}$: The estimation is **less local**, **more global**
+
+
+## Kernel estimators: Properties
+- If all the observations $\bm{x_i}$ are weighed the same (large bandwidth $\bm{h}$), the weights can be ignored in the minimization problem
+- Result: The estimator $\bm{\hat{f}(x)}$ does not pick up the patterns of the true function $\bm{f(x)}$ and is equal to $\bm{\bar{y}}$: **High bias, low variance**\
+  \textbf{\color{SFUblue} $\bm{\Rightarrow}$ Underfitting}
+- If only the closest observations contribute to $\bm{\hat{f}(x)}$, the estimator picks too much of the pattern around the point of estimation: **Low bias, high variance** \
+  \textbf{\color{SFUblue} $\bm{\Rightarrow}$ Overfitting}
+- Again, a **bias-variance tradeoff**
+
+## Kernel estimators: Asymptotic Properties
+- It can be shown that 
+\[
+\bm{\hat{f}(x_0) - f(x_0) = O_p\left(h^2 + \frac{1}{\sqrt{nh}} \right)}
+\]
+
+- For the right hand side to go to zero, we need $\bm{h \to 0}$ and $\bm{nh \to \infty}$
+- In words: The window around $\bm{x_0}$ must decrease as the sample size increases, but the sample size must go to infinity faster than the bandwidth goes to 0
+
+## Optimal bandwidth selection
+\label{kernel_selection}
+
+- The bandwidth $\bm{h}$ is to kernels what $\bm{K}$ is to nearest neighbors: A **tuning** parameter that has to find the optimal balance between bias and variance
+- As for KNN methods, the leave-one-out cross validation can be used:
+\[
+\bm{CV(h) \equiv \sum_{i=1}^n (y_i - \hat{f}_{-i}(x_i))^2}
+\]
+- $\bm{\hat{f}_{-i}(x_i)}$ is the **leave-one-out** estimator of $\bm{f(x_i)}$. It is the estimate of $\bm{f(x_i)}$ without using observation $\bm{i}$ in the process $\bm{\Rightarrow}$ Observation $\bm{i}$ plays the role of test sample!
+
+## Beyond one covariate: The curse of dimensionality
+\label{curse}
+
+- We can equally define a multivariate version of kernel estimators. Say we have $\bm{p}$ covariates
+- Kernel functions are now multivariate kernels. One straightforward candidate is the product kernel:
+\[
+\bm{\mathcal{K}\left(\frac{x_i - x_0}{h}\right) \equiv K\left(\frac{x_{i,1} - x_{0,1}}{h_1}\right)\times...\times K\left(\frac{x_{i,p} - x_{0,p}}{h_p}\right)}
+\]
+
+- One bandwidth per covariate, so $\bm{p}$ bandwidths have to be found (again, leave-one-out cross validation!)
+
+## Beyond one covariate: The curse of dimensionality
+- It can be shown that 
+\[
+\bm{\hat{f}(x_0) - f(x_0) = O_p\left(\sum_{j = 1}^p h_j^2 + \frac{1}{\sqrt{nh_1h_2...h_p}} \right)}
+\]
+
+- For the right hand side to go to zero, we need $\bm{h_j \to 0\,\, \forall j = 1,...,p}$ and $\bm{nh_1h_2...h_p \to \infty}$
+- Each bandwidth should go to 0, but we also need $\bm{nh_1h_2...h_p \to \infty}$
+- So the sample size needs to increase quickly to keep the second term low (the variance term)
+- It is the **curse of dimensionality**: As the number of covariates increases, the sample size needs to increase faster in order to stay accurate
+- Result: The rate of convergence to the true regression function is slower than a parametric or semi parametric model
+
+## Fighting the curse of dimensionality
+- In practice, one deals with more than one covariate, making nearest neighbors and kernel estimators less appealing due to the curse of dimensionality
+- Other models have been proposed to deal with it:
+- General additive models
+\[
+\bm{Y_i = f_1(X_{i,1}) + f_2(X_{i,2}) + ... + f_p(X_{i,p}) + u_i}
+\]
+
+- By separating the functions, the rate of convergence is the one of a univariate nonparametric regression
+
+## Fighting the curse of dimensionality
+- Other models include a parametric component **and** a nonparametric component: They are **semi parametric**
+
+- **Partially linear models**
+\[
+\bm{Y_i =  \beta_1X_{i,1} + ... + \beta_{p-1}X_{i,p-1} + f(X_{i,p}) + u_i}
+\]
+- We can obtain estimates of the $\bm{\beta_j,\,\, j = 1,...,p-1}$ like an OLS estimation while taking the nonparametric component $\bm{f(X_{i,p})}$ into account using **Robinson (1988)**'s double residuals method (kernel estimation of the nonparametric component, and then OLS using the residuals $\bm{y_i - \hat{f}(x_{i,p})}$ and $\bm{x_{i,j} - \hat{f}(x_{i,p})}$)
+
+- **Single index models**
+\[
+\bm{Y_i = f(\beta_1X_{i,1} + ... + \beta_pX_{i,p}) + u_i}
+\]
+- Only **one** variable now: The linear combination of the $\bm{X_{i,j}, \,\, j = 1,...,p}$
+
+## Beyond local constant: Local linear estimators
+\label{local linear}
+
+- The estimator seen above, by construction, performs poorly when estimating the regression function around points at the boundary of the support of the data
+- Intuition: If we want to predict a point that has no observation to its left, we will be using observations to the right only to compute the average, and the prediction will be highly inaccurate: It is the **boundary bias**
+- An alternative estimator was proposed. Instead of computing a local average around $\bm{x_0}$, run a weighted linear regression **centered** around $\bm{x_0}$:
+\[
+\bm{{\underset{\{b_0,b_1\}}{\min}\sum_{i=1}^n (y_i - b_0 - b_1(x_i - x_0))^2 K\left(\frac{x_{i} - x_{0}}{h}\right)}}
+\]
+
+## Local linear estimators
+- Note: There is **one** minimization problem per $\bm{x}$ we want to estimate $\bm{f()}$ at, instead of one single minimization problem for any prediction like the OLS estimator
+- If we want to estimate $\bm{f(x_i) \,\, \forall i = 1,...,n}$ (the observations of the sample), we can use matrix notation to gather these $\bm{n}$ minimization problems into one nice formula
+- The result is still $\bm{\hat{f}(x_0) = \sum_{i=1}^n w_i(x_0)y_i}$, but the weights are a more complicated formula than in the local constant case
+- If $\bm{h}$ is high enough, the weights do not matter and the result is a straight OLS estimation! The **local** estimator becomes **global**
+- In practice, the local linear estimator is preferred to the local constant one as both share the same asymptotic properties except for the boundary bias
+
+## Local polynomial estimators
+- Why stop at a local linear estimator?
+- We can go beyond and add polynomial terms to estimate the derivatives of $\bm{f()}$ at a point $\bm{x_0}$:
+\[
+\bm{{\underset{\{b_0,b_1,...,b_q\}}{\min}\sum_{i=1}^n (y_i - b_0 - b_1(x_i - x_0) - ... - b_q(x_i - x_0)^q)^2 K\left(\frac{x_{i} - x_{0}}{h}\right)}}
+\]
+where $\bm{q}$ is the order of the local polynomial
+- We now have two tuning parameters: The bandwidth $\bm{h}$ and the polynomial order $\bm{q}$
+- How to get the optimal values for both? Leave-one-out cross validation!
+
+## Illustration in \textbf{\textsf{Rstudio}}: The ***np*** package
+\label{kernel_r}
+
+- The ***np*** contains a lot of nonparametric methods, with different features and tuning parameters selection options (choice of kernel function, bandwidth selection)
+- First, use ***npregbw*** to find the optimal bandwidth(s)
+- Second, compute the predictions using ***npreg*** and include the bandwidth found in the previous step
+
+## Kernel estimators in \textbf{\textsf{Rstudio}}: Local constant
+\scriptsize
+```{r}
+# Local constant estimator
+bw_lc <- npregbw(y ~ x, regtype = "lc", ckertype = "epanechnikov")
+model_lc <- npreg(bws = bw_lc)
+local_constant <- model_lc$mean
+summary(model_lc)
+```
+
+## Kernel estimators in \textbf{\textsf{Rstudio}}: Local linear
+\scriptsize
+```{r}
+# Local linear estimator
+bw_ll <- npregbw(y ~ x, regtype = "ll", ckertype = "epanechnikov")
+model_ll <- npreg(bws = bw_ll)
+local_linear <- model_ll$mean
+summary(model_ll)
+```
+
+## Kernel estimators in \textbf{\textsf{Rstudio}}: Local constant
+
+```{r, echo = FALSE}
+bandwidths <- c(0.001, 0.1, 0.5, 1)
+preds_lc <- matrix(0, nrow = n, ncol = length(bandwidths))
+preds_ll <- matrix(0, nrow = n, ncol = length(bandwidths))
+
+for(i in 1:length(bandwidths))
+{
+  preds_lc[ , i] <- npreg(y ~ x, bws = bandwidths[i], regtype = "lc")$mean
+  preds_ll[ , i] <- npreg(y ~ x, bws = bandwidths[i], regtype = "ll")$mean
+}
+```
+
+```{r, echo = FALSE}
+# Add the optimal bandwidth to the previous dat object and plot everything
+h_lc <- bw_lc$bw
+h_ll <- bw_ll$bw
+bandwidths <- c(bandwidths, h_lc, h_ll)
+# bandwidths <- sort(bandwidths)
+bandwidth <- rep(bandwidths, each = n)
+bandwidth[bandwidth == 0.001] <- paste("h = ", 0.001)
+bandwidth[bandwidth == 0.1] <- paste("h = ", 0.1)
+bandwidth[bandwidth == 0.5] <- paste("h = ", 0.5)
+bandwidth[bandwidth == 1] <- paste("h = ", 1)
+bandwidth[bandwidth == h_lc] <- paste("Local constant = ", round(h_lc, 3))
+bandwidth[bandwidth == h_ll] <- paste("Local linear = ", round(h_ll, 3))
+
+Bandwidth <- as.factor(bandwidth)
+
+preds <- cbind(preds_lc, local_constant, local_linear)
+predictions <- matrix(preds, nrow = n*length(bandwidths), ncol = 1)
+
+dat_lc <- data.frame(Y = rep(y, times = length(bandwidths)), X = rep(x, times = length(bandwidths)), Bandwidth, predictions)
+```
+
+\begin{center}
+
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(data = dat_lc, aes(x = X)) +
+  geom_point(mapping = aes(y = Y), alpha = 0.5, size = 3) +
+  geom_line(aes(y = predictions, color = Bandwidth), size = 1.5) +
+  xlab(TeX("$x_{i}$"))+
+  ylab(TeX("$y_i$")) +
+  theme_minimal() +  # for style
+  theme(text = element_text(family = "serif")) +  # changes any text font into serif
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22 ),
+  axis.text = element_text(size = 24 ))  +
+  facet_wrap(~ Bandwidth, nrow = 2)+
+  theme(strip.text.x = element_text(size = 22)) 
+  # theme(legend.position = "none")
+```
+
+\end{center}
+
+## Kernel estimators in \textbf{\textsf{Rstudio}}: Local linear
+
+\begin{center}
+
+```{r, echo = FALSE}
+preds <- cbind(preds_ll, local_constant, local_linear)
+predictions <- matrix(preds, nrow = n*length(bandwidths), ncol = 1)
+
+dat_ll <- data.frame(Y = rep(y, times = length(bandwidths)), X = rep(x, times = length(bandwidths)), Bandwidth, predictions)
+```
+
+
+```{r, echo = FALSE, message = FALSE,  out.width = '100%', fig.width = 20, fig.height = 8, warning = FALSE}
+ggplot(data = dat_ll, aes(x = X)) +
+  geom_point(mapping = aes(y = Y), alpha = 0.5, size = 3) +
+  geom_line(aes(y = predictions, color = Bandwidth), size = 1.5) +
+  xlab(TeX("$x_{i}$"))+
+  ylab(TeX("$y_i$")) +
+  theme_minimal() +  # for style
+  theme(text = element_text(family = "serif")) +  # changes any text font into serif
+  theme(axis.title.x = element_text(family = "serif", size = 22),       # Changes fonts into times new roman
+  axis.title.y = element_text(family = "serif", size = 22),
+  legend.text = element_text(family = "serif", size = 22),
+  legend.title = element_text(family = "serif", size = 22 ),
+  axis.text = element_text(size = 24 ))  +
+  facet_wrap(~ Bandwidth, nrow = 2)+
+  theme(strip.text.x = element_text(size = 22)) 
+  # theme(legend.position = "none")
+```
+
+\end{center}
+
+## Other nonparametric methods
+\label{other}
+
+- **Splines regression** consists in estimating piece wise polynomials. Between two knots (say, $\bm{x = 0}$ and $\bm{x = 2}$), a polynomial is fitted. Between two other knots (say, $\bm{x = 2}$ and $\bm{x = 5}$), another polynomial of possibly different order is fitted
+- To keep the function smooth, the method makes sure that at each knot, the polynomials from either side have the same derivative
+- **Sieves regression** is a **global** estimation method, consisting in regressing $\bm{Y_i}$ on sum transformations of $\bm{X_i}$
+- Could be power functions (polynomials), but also sine/cosine functions, as well as orthogonal polynomials
+- How many terms to include is the question: For consistency, the number of terms to include must increase at a certain rate with the sample size (similar idea as the bandwidth for kernel methods)
+
+
+## Conclusion
+- Nearest neighbors and kernel methods are rich, and many improvements have been developed 
+- The choice of the kernel function makes a (little) difference: One can show that the Epanechnikov kernel leads to a lower MSE than the others, but the Gaussian kernel is a commonly used one
+- These methods can be used to estimate density functions. They deliver a smooth density curve instead of histograms
+- Their weakness to a high number of covariates makes them less appealing for big data problems
+- But their intuition remains powerful and they are still widely used

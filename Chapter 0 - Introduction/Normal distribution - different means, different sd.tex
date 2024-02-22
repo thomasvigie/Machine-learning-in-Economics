@@ -1,0 +1,93 @@
+% Package loading 
+%\documentclass{article}
+%\usepackage{tikz, pgfplots}
+%\usepackage{amsthm} 
+%\usepackage{amsmath} 
+%\usepackage{amssymb} 
+%\usepackage{bm}
+%\pgfplotsset{compat = newest}
+%  \usetikzlibrary{intersections, angles, patterns}
+%\usepgfplotslibrary{fillbetween}   % For surpluses
+%\begin{document}
+	
+%	\centering
+%	\pgfplotsset{
+%		small,
+%		%legend style={legend pos=north east}
+%		legend style={
+%			at={(0.01,0.01)},
+%			anchor=south west,
+%		},
+%	}%	
+	
+% Graph for surpluses with a negative production externality.
+% MC = 0.5Q
+% MB = 105 - Q
+% SEC = 30
+% Market equilibrium: (70, 35)
+% Socially efficient level: (50, 55)
+
+\begin{tikzpicture} 
+	\begin{axis}[
+		xlabel={$x$}, 
+%		ylabel={$y$},
+		axis lines= middle,
+%		y axis line style={opacity=0},
+		samples = 200, 
+		xmin = -5, xmax = 5.5,
+		ymin = 0, ymax = 0.45,
+		xtick = {0} ,
+		xticklabels={0},
+		ytick = {0},
+		yticklabels={0},
+		legend pos = outer north east,
+		legend style={draw=none},   % If we don't want borders around the legend
+		xlabel style={below},
+		ylabel style={left}]
+		
+		% Standard normal pdf
+		\addplot[no marks, thick, name path = pdf, darkcyan, domain = -5:5] {1/(2*3.141593)^(0.5)*exp(-(x)^2/(2))};
+		% Normal pdf, mean = 1
+		\addplot[no marks, thick, name path = pdf-high mean, DarkRed, domain = -5:5] {1/(2*3.141593*1.5)^(0.5)*exp(-(x-1)^2/(2*1.5^2))};
+		% x-axis horizontal line
+		\addplot[no marks, name path = zero, domain = -3:3]{0};
+		% Vertical dashed line
+%		\addplot[ dashed, black] coordinates {(1.5, 0) (1.5, 0.1295176)};  
+		% Horizontal dashed line at phi(1)
+%		\addplot[dashed, black, domain = 0:1.5] {0.1295176};
+		% Filling areas under the pdf to get the cdf
+		% Consumer surplus
+%		\addplot [
+%		thick,
+%		color=cyan,
+%		fill=cyan, 
+%		fill opacity=0.5
+%		]
+%		fill between[
+%		of= pdf and zero,
+%		soft clip={domain= -3:1.5},
+%		];
+		
+		
+		\legend{ %{$\mathcal{N}(0,\, 1)$},
+%		{$\mathcal{N}(1,\, 2)$}
+            $\bm{\mathcal{N}(0,1)}$,
+			$\bm{\mathcal{N}(1,2)}$,
+%		{$\mu = 0, \, \sigma = 1$},
+%			{$\mu = 1, \, \sigma = 2$}
+%			,
+%			,
+%			$\mathbb{P}(X\leq x_0)=\varphi (x_0)$
+		}
+		
+%		\node[circle, scale = 0.5, fill = black] at (axis cs:1.5, 0.1295176) {};
+%		\node[circle, scale = 0.5, fill = black] at (axis cs:50, 55) {};
+		
+		% Label the pdf
+%		\node[blue] at (axis cs: 2.7, 0.05) {$\phi (x)$};
+			
+	\end{axis}
+	
+\end{tikzpicture}
+	
+%\end{document}

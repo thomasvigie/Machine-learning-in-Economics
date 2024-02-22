@@ -1,0 +1,157 @@
+%% Package loading 
+%\documentclass{article}
+%\usepackage{tikz, pgfplots}
+%\pgfplotsset{compat = newest}
+%\usetikzlibrary{intersections, angles, patterns}
+%\usepgfplotslibrary{fillbetween}   % For surpluses
+%\usepackage{color}
+%\usepackage{pbox}
+%\usepackage{multirow}
+%\usepackage{xcolor} 
+%\usepackage{amsthm} 
+%\usepackage{amsmath} 
+%\usepackage{amssymb} 
+%\usepackage{bm}
+%\usepackage{babel} 
+%\usepackage[T1]{fontenc} 
+%\usepackage{graphicx} 
+%\usepackage{graphicx,epsfig} 
+%\usepackage{float} 
+%\usepackage{caption}   
+%\usepackage[caption = false]{subfig}
+%\usepackage{soul} 
+%\usepackage[countmax]{subfloat}
+%\usepackage{rotfloat} 
+%\usepackage{slashed} 
+%\usepackage{verbatim} 
+%\usepackage{epstopdf} 
+%\usepackage{eepic} 
+%\usepackage{epic} 
+%%\usepackage{sgame} %, tikz} % Game theory packages
+%\usepackage{pstricks,pst-node}
+%\usepackage{sgamevar,egameps}
+%\usepackage{pstricks,egameps}
+%%Style -------------------------------------------------------------------
+%
+%\newrgbcolor{lightblue}{.80 .91 .99}
+%\newrgbcolor{DarkBlue}{0.2 0.30 0.60}
+%\newrgbcolor{SeaBlue}{0 0.6 0.8}
+%\newrgbcolor{pddblue}{.17 .31 .44}
+%\definecolor{pdlblue}{rgb}{.75,.85,.92}
+%\definecolor{pdllblue}{rgb}{.9,.95,.98}
+%\newrgbcolor{FadeBlue}{0.75 0.85 0.92}
+%\newrgbcolor{SkyBlue}{0.6 0.8 1}
+%
+%\definecolor{SFUgray}{RGB}{84,88,90}
+%\definecolor{SFUgold}{RGB}{193,160,30}
+%\definecolor{SFUred}{RGB}{166,25,46}
+%
+%\definecolor{light-gray}{RGB}{236,236,236}
+%\definecolor{light-gold}{RGB}{240,232,199}
+%\definecolor{lighter-gold}{RGB}{239,235,222}
+%\newrgbcolor{darkgreen}{0 0.6 0.4}
+%\newrgbcolor{medgreen}{0 0.8 0.4}
+%\newrgbcolor{lightgreen}{0.6 1 0.6}
+%
+%\newrgbcolor{chartreuse}{0.5 1 0}
+%\newrgbcolor{charcoal}{0.21 0.27 0.31}
+%% Super Saiyan Blue style
+%\newrgbcolor{darkcyan}{0 0.55 0.55}
+%% Super saiyan God style
+%\newrgbcolor{DarkRed}{0.8 0 0.2}
+%
+%\newrgbcolor{carrot}{0.91 0.41 0.17}
+%\newrgbcolor{darkolivegreen}{.33333 .41961 .18431}
+%\newrgbcolor{fadedolivegreen}{.96 .97 0.89}
+%\begin{document}
+%
+%
+%\begin{figure}[H]
+%\begin{center}
+\begin{tikzpicture} 
+\begin{axis}[
+xlabel={Time}, 
+ylabel={$\bm{ Y }$},
+axis lines= middle,
+samples = 41, 
+xmin = 10, xmax = 110,
+ymin = 0, ymax = 100,
+tick style={draw=none},
+xtick = {0, 15, 50, 85} ,
+xticklabels={$0$, $\bm{ T = 0 }$, Treatment,  $\bm{ T = 1 }$},
+ytick = { },
+yticklabels={ },
+legend pos = outer north east,
+legend style={draw=none},   % If we don't want borders around the legend
+xlabel style={below},
+ylabel style={left}]
+
+% Time of the treatment
+\addplot[black] coordinates {(50, 0) (50, 90)}; 
+\addplot[dashed, black] coordinates {(15, 0) (15, 100)}; % Before the treatment
+\addplot[dashed, black] coordinates {(85, 0) (85, 100)}; % After the treatment
+
+% Control group
+%\addplot[DarkRed, thick] coordinates {(15, 15) (85, 35)};
+\addplot[DarkRed, thick, domain = 15:85]{10.71429 + 0.2857143*x};
+\addplot[DarkRed, dashed, domain = 15:85]{15};
+%\addplot[DarkRed, dashed] coordinates {(15, 15) (85, 15)};
+\node[circle, scale = 0.4, fill = DarkRed] at (axis cs:15, 15) {};
+\node[circle, scale = 0.4, fill = DarkRed] at (axis cs:85, 15) {};
+\node[circle, scale = 0.4, fill = DarkRed] at (axis cs:85, 35) {};
+%\draw [black, thick] [<->](25, 30)--(75, 50) ;  
+
+%\addplot[DarkRed, thick, mark=*] coordinates {(15, 15) (85, 35)};
+%\addplot[DarkRed, thick, dashed, mark=*] coordinates {(15, 15) (85, 15)};
+%\draw [black, thick] [<->](25, 30)--(75, 50) ;  
+
+% Treatment group
+% Pre treatment
+\addplot[darkcyan, thick, domain = 15:50]{35.71429 + 0.2857143*x};
+% Post treatment
+\addplot[darkcyan, thick, domain = 50:85]{-7.14285 + 1.142857*x};
+% Post treatment (as if no treatment)
+\addplot[darkcyan, dashed, domain = 50:85]{35.71429 + 0.2857143*x};
+
+%\addplot[darkcyan, thick] coordinates {(15, 40) (85, 90)};
+\addplot[darkcyan, dashed] coordinates {(15, 40) (85, 60)};
+\addplot[darkcyan, dashed] coordinates {(15, 40) (85, 40)};
+\node[circle, scale = 0.4, fill = darkcyan] at (axis cs:15, 40) {};
+\node[circle, scale = 0.4, fill = darkcyan] at (axis cs:85, 40) {};
+\node[circle, scale = 0.4, fill = darkcyan] at (axis cs:85, 60) {};
+\node[circle, scale = 0.4, fill = darkcyan] at (axis cs:85, 90) {};
+%\addplot[darkcyan, thick, mark=*] coordinates {(15, 40) (85, 90)};
+%\addplot[darkcyan, thick, dashed, mark=*] coordinates {(15, 40) (85, 60)};
+
+%\addplot[darkcyan, thick, mark=*] coordinates {(15, 40) (85, 90)};
+%\addplot[gray, thick, dashed, mark=*] coordinates {(15, 40) (85, 60)};
+%\addplot[darkcyan, thick, dashed, mark=*] coordinates {(15, 40) (85, 40)};
+%\draw [black, thick] [<->](25, 50)--(75, 70) ;
+
+% Curly brackets to describe ATT = delta + lambda
+\draw [darkcyan, thick, decorate, decoration={brace, raise = 5pt, amplitude = 5pt, mirror}]
+(85, 40) -- (84, 90)node [black, midway, right=10pt] {\scriptsize{$\bm{ {\color{darkcyan}ATT} + {\color{SFUgold}a} }$}};
+
+% Curly brackets to describe the differences between groups
+%\draw [orange, thick, decorate, decoration={brace, raise = 5pt, amplitude = 5pt, mirror}]
+%(15, 15) -- (15, 40)node [orange, midway, right=10pt] {\footnotesize{$\tau$}};
+
+% Curly brackets to describe the intercept
+%\draw [darkolivegreen, thick, decorate, decoration={brace, raise = 5pt, amplitude = 5pt, mirror}]
+%(15, 0) -- (15, 15)node [darkolivegreen, midway, right=10pt] {\footnotesize{$\beta_0$}};
+
+% Curly brackets to describe the time fixed effect
+\draw [SFUgold, thick, decorate, decoration={brace, raise = 5pt, amplitude = 5pt, mirror}]
+(85, 15) -- (85, 35)node [SFUgold, midway, right=10pt] {\footnotesize{$\bm{ a }$}};
+
+%\node[circle, scale = 0.5, fill = black] at (axis cs:70, 35) {};
+%\node[circle, scale = 0.5, fill = black] at (axis cs:52.5, 52.5) {};
+
+\end{axis}
+
+\end{tikzpicture}
+%\end{center}
+%\caption{DiD estimation decomposition}
+%\end{figure}
+%
+%\end{document}

@@ -1,0 +1,492 @@
+---
+title: "Rmarkdown template"
+author: "Thomas Vigié"
+output:
+  beamer_presentation:
+    includes:
+      in_header: preamble.txt
+    keep_tex: yes
+  slidy_presentation: default
+classoption: aspectratio=169
+urlcolor: blue
+linkcolor: SFUblue
+---
+
+```{r, echo = FALSE, results = "hide", warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse","rmarkdown")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+# library(nycflights13)
+# library(lubridate)
+# library(Lock5Data)
+# library(crimedata)
+# library(fivethirtyeight)
+# library(ISLR)
+# library(stargazer)
+# library(randomForest)
+# library(party)
+# library(tree)
+# library(rpart)       # performing regression trees
+# library(rpart.plot)  # plotting regression trees
+# library(np)
+# library(car)
+# library(modelr)
+# library(rdd)
+```
+
+## Disclaimer
+I do not allow this content to be published without my consent.
+
+
+All rights reserved \textcopyright  2023 Thomas Vigié
+
+## Outline  
+\label{outline}
+
+- \hyperlink{R}{\textbf{What is \textsf{R}?} }
+- \hyperlink{RStudio}{\textbf{What is \textsf{RStudio}?} }
+- \hyperlink{script}{\textbf{Editing a script} }
+<!-- - \hyperlink{RNG}{\textbf{Generating random numbers (RNG)} } -->
+- \hyperlink{R Markdown}{\textbf{What is \textsf{R Markdown}?} }
+- \hyperlink{data}{\textbf{Working with data} }
+    - \hyperlink{plot}{\textbf{Plots in \textsf{R}} }
+    - \hyperlink{commands}{\textbf{Useful commands} }
+- \hyperlink{loop}{\textbf{Loops in \textsf{R}} }
+
+## What is \textbf{\textsf{R}}?  
+\label{R}
+
+- \textbf{\textsf{R}} is a computational language (Open source!)
+- \textbf{\textsf{RStudio}} is a software that provides the interface for \textbf{\textsf{R}} commands
+- Can be used to:
+    - Analyze data (more tools than Excel)
+    - Export data after making operations on them
+    - Produce great figures, graphs and tables (nicer than Excel)
+    - Perform mathematical operations (fancier than Excel)
+    - Write pdf, html, presentation documents, and many more via \textbf{\textsf{R Markdown}}
+- You need to download both! \textbf{\textsf{R}} \href{https://www.r-project.org/}{\textbf{here}} first and then \textbf{\textsf{RStudio}} \href{https://www.rstudio.com/}{\textbf{here}} 
+    
+## How does it work?
+- Write code (=instructions) in the \textbf{\textsf{R}} language
+- Instructions are sent to the software (run/compile the code)
+- \textbf{\textsf{R}} returns an output
+- The output can be saved in various formats:
+    - **.\textbf{\textsf{R}}Data** (e.g. computations results, data sets)
+    - **.csv** (e.g. data sets. What I recommend in practice)
+    
+## Learning \textbf{\textsf{R}}
+- Many books and online resources
+- \href{https://swirlstats.com/}{\textbf{Swirl}} (online step by step tutorial. Try the first couple of lessons!)
+- \href{https://www.RStudio.com/resources/cheatsheets/}{\textbf{\textsf{R} cheat sheets}}
+- \href{https://r4ds.had.co.nz/}{\textbf{\textsf{R} for data science}} is a free online book that teaches data visualization, manipulation, etc... The author Hadley Wickham made huge contributions to the \textbf{\textsf{R}} community, including this book (the book itself was made in \textbf{\textsf{R}}!!)
+- Like many languages have the same roots or structures (e.g. French/Spanish/Italian), the \textbf{\textsf{R}} language is very close to other languages like Matlab, Julia, Python. So it is a good investment no matter what
+- Knowing at least one computational language is a big (if not the biggest) asset of a young economist these days
+
+## What is \textbf{\textsf{RStudio}}? 
+\label{RStudio}
+
+- \textbf{\textsf{R}} is the language, but the interface is not very user friendly...
+- \textbf{\textsf{RStudio}} is an **Integrated Development Environment (IDE)** with a waaaay better interface
+- It is composed of 4 panels:
+    - Top left: This is your **script**, what you edit and save for later
+    - Top right: This is the **working environment**. Saved variables, vectors, data sets appear on that panel
+    - Bottom left: **The command window**. where the results appear. You can also type commands in it and run them directly (they are not saved in the script in this case)
+    - Bottom right: Help files, plots, and working folders can be found among other things
+
+<!-- ## \textbf{\textsf{RStudio}} interface -->
+<!-- \begin{center} -->
+<!-- \includegraphics[width=\textwidth]{RStudio interface.png} -->
+<!-- \end{center} -->
+
+
+## \textbf{\textsf{RStudio}} interface
+\begin{center}
+\includegraphics[width=\textwidth]{RStudio interface clear.png}
+\end{center}
+
+## Workflow with \textbf{\textsf{RStudio}}
+- Have a folder that contains the **.\textbf{\textsf{R}}** or **.\textbf{\textsf{Rmd}}** file, the data, the paper/assignment you are writing and anything related to the script (one project = one folder)
+- Open the **.\textbf{\textsf{R}}** or **.\textbf{\textsf{Rmd}}** file by clicking on it every time, it sets the **working directory** directly in that folder (don't skip that step if you want to have a smooth experience. Trust me!!)
+- This way, data can be loaded directly, without specifying the whole path of the file
+- Believe me, it will avoid you a lot of struggles!
+
+## Workflow with \textbf{\textsf{RStudio}}: Editing a script 
+\label{script}
+
+- \textbf{\textsf{R}} contains some functions (= commands), but many commands come in **packages**
+- A package is a folder that contains commands for particular purposes
+- First thing to do: Install the packages using \texttt{install.packages("package name")} (\textbf{\textsf{RStudio}} will download them from the internet and put them in the appropriate folder automatically)
+- Installation can be done once per computer. Every time \textbf{\textsf{RStudio}} is open, you need to **load** the packages using the \texttt{library("package name")} command (\textbf{\textsf{RStudio}} will make the packages ready to use)
+- Start editing your script. In general, it involves loading some data set, then performing computations on it and make some comments to keep track of your progress
+
+## Editing a script: Install and load packages
+
+\small
+```{r, eval = FALSE, results = "hide", warning = FALSE, message = FALSE}
+# This chunk of code takes a list of packages, checks if they are 
+# installed already and if not, installs them. 
+# Then it loads them and we are ready to go. Credit goes to Chris Muris
+list.of.packages <- c("tidyverse","rmarkdown")      
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()
+                                   [,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(rmarkdown)
+
+```
+\normalsize
+
+## Editing a script: Basic commands
+\small
+```{r}
+print("Hello, world!")    # Print() shows the output inside the brackets
+"Ceci n' est pas une pipe" # Or we can make R show it by directly asking 
+# for it. Print() is more helpful in general
+```
+
+## Editing a script: Basic commands
+<!-- \begin{small} -->
+```{r}
+# You can save the message in the working directory
+# (Top right-hand corner) using the <- or = symbol
+message <- "Hello World"
+message      # that will show what the variable "message" is
+ 
+# Doing some basic statistical operations
+data <- rnorm( 20, mean = 5 , sd = 2)  # Creates numbers "randomly", 
+# according to a normal distribution
+head(data)  # shows the first rows and columns of the data
+ 
+mean(data)
+```
+
+## Editing a script: Basic commands
+\scriptsize
+```{r}
+mean(data)  # Computes the sample mean
+mean(data^2) # Computes the sample mean of the data with each element squared
+ 
+var(data)                           # variance derivation
+sd(data)                            # standard deviation derivation formula
+# standard deviation by hand, using the square root. Why are the results different???
+sqrt(mean(data^2) - (mean(data))^2) # standard deviation by hand, using the square root
+summary(data) # summary() shows a couple of statistics about the data
+```
+\normalsize
+<!-- \end{small} -->
+
+
+<!-- ## Random number generation (RNG) basics \label{RNG} -->
+<!-- - How does a computer generate random number? -->
+<!-- - It doesn't. Numbers are generated \textbf{pseudo randomly} -->
+<!-- - Idea: start with a number "randomly" picked, perform operations on it, align the result on the distribution it is supposed to come from -->
+<!-- - The starting number can come from the computer clock for instance -->
+
+<!-- ## RNG basic algorithm -->
+<!-- - One of the oldest algorithm to generate random numbers is the **linear congruential generator** -->
+<!-- - Choose a **seed** value (=start value), $X_0$ (can be related to the time displayed by the computer for instance) -->
+<!-- - Use the formula -->
+<!-- \[ -->
+<!-- X_{n+1} = \left(aX_n  + c \right) \text{mod}\, m -->
+<!-- \] -->
+<!-- where $a \text{mod} b$ means taking the remainder of the division of $a$ by $b$ -->
+<!-- - $a$ and $c$ are constants -->
+<!-- - For numbers to be generated from a specific distribution, generate a number $U$ between 0 and 1 in a similar way -->
+<!-- - Look for the number in the target distribution such that the probability of observing less than it is $U$: It is called the **inversion method** -->
+
+
+<!-- ## RNG: Illustration -->
+<!-- ```{r, eval = FALSE} -->
+<!-- n <-   1000              # sample size -->
+<!-- dat <- as_tibble(rnorm(n))          # "draw" n numbers from a normal distribution -->
+<!-- colnames(dat) <- "x" -->
+<!-- g <- ggplot(data = dat) +  # Plot density of x to see the bell curve -->
+<!--    geom_density(aes(x = x)) -->
+<!-- ``` -->
+
+## What is \textbf{\textsf{R Markdown}}? 
+\label{R Markdown}
+
+- \textbf{\textsf{R}} is the language
+- \textbf{\textsf{RStudio}} is the interface (the software you use to run everything)    
+- \textbf{\textsf{R Markdown}} is a file format for making dynamic documents with \textbf{\textsf{R}}
+- We can write plain text, and add code chunks in the middle
+- \textbf{\textsf{RStudio}} then compiles the code ("knits") and produces a pdf or html or Word document
+- So you can write a paper, a presentation or your resume entirely with \textbf{\textsf{R}} using \textbf{\textsf{R Markdown}}
+- The course lecture notes are made in \textbf{\textsf{R Markdown}}
+<!-- - It requires loading the ***rmarkdown*** package at the beginning of a session -->
+
+## Workflow with \textbf{\textsf{R Markdown}}
+- Write plain text for sections, titles, bullet points etc
+- Insert code chunks in between, using ***Ctrl + Alt + I*** (windows)
+- Press on the **Knit** button to compile in the format of your choice
+- You are **not required** to use \textbf{\textsf{R Markdown}} to produce your paper or presentation, but you are encouraged to try (templates will be made available on cnavas for you to play around)
+
+## \textbf{\textsf{R Markdown}} interface
+\begin{center}
+\includegraphics[width=\textwidth]{rmarkdown picture.png} -->
+\end{center}
+
+## Useful commands and shortcuts in \textbf{\textsf{R Markdown}}
+- ***Ctrl + Shift + C*** (windows) or ***Cmd + Shift + C*** (MacOS) turns a line into a comment (same as \textbf{\textsf{RStudio}}, but the comment symbol is not # anymore, it is \<!-- commented text \-->)
+- A section starts with #, a subsection with ##, a subsubsection with ### 
+- Use the dash **-** to start an itemized (bullet points) list
+- ``**'' before and after a word produces bold face
+- The dollar sign **$** is used to start the math mode (comes from Latex, an editing programming language). With it, you can type fancy mathematical expressions and symbols such as $\bm{\bar{X}}$, $\bm{X_i}$, $\bm{\sum_{i=1}^{n}\left(y_i - x_i^{\prime}\beta \right)^2}$  
+- See the \textbf{\textsf{R Markdown}} cheat sheet \href{https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf}{\textbf{here}} online
+
+## Data analysis in \textbf{\textsf{R}} 
+\label{data}
+
+\scriptsize
+```{r}
+data <- read_csv("vancouver_daily_crime.csv")   # Load the data, and call the data set "data"
+names(data)    # See the names of the variables in the data
+```
+\normalsize
+
+## Data analysis in \textbf{\textsf{R}} 
+```{r}
+head(data)     # See the first rows of the data
+```
+
+## Data analysis in \textbf{\textsf{R}} 
+```{r}
+summary(data)  # Shows a summary of each variable
+```
+
+## Data analysis in \textbf{\textsf{R}} 
+```{r}
+nrow(data)  # Save the sample size
+ncol(data)  # Save the number of variables in the data
+# data$Theft    # Looks at one variable in particular
+data[6:8, 2]   # looks at the 6th column of the data, 6th to 8th rows
+```
+
+## Plots in \textbf{\textsf{R}}: **\texttt{ggplot}**  
+\label{plot}
+
+- The **\texttt{tidyverse}** package contains a loooot of features for data analysis
+- Highly recommended to always load **\texttt{tidyverse}**
+- **\texttt{ggplot}** is one of them. It produces waaay better plots than the basic **\texttt{plot}** command
+- It works by layers: First, you tell what data you are using to plot
+- Then, you specify the mapping (what $\bm{x}$ and $\bm{y}$ are) using the **\texttt{aes}** command. If you want to assign a color to a third (qualitative) variable, you can use **\texttt{color = }**
+- You can change the type of plot using **\texttt{geom\_}** (**\texttt{geom\_point}**, **\texttt{geom\_histogram}**, etc)
+- Add more layers to change the way the plot looks: Axis labels, legend style, etc 
+
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+```{r}
+mpg <- ggplot2::mpg # This is a data set on cars, 
+# contained in the ggplo2 package
+names(mpg)    # See the names of the variables in the data
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+\scriptsize
+```{r}
+head(mpg)     # See the first row of the data
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+\scriptsize
+```{r}
+summary(mpg)  # Shows a summary of each variable
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+```{r, eval = FALSE}
+ggplot(data = mpg) +
+geom_point(mapping = aes(x = displ, y = hwy, color = class))
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+
+\begin{center}
+```{r, echo = FALSE, out.width = '70%'}
+ggplot(data = mpg) +
+geom_point(mapping = aes(x = displ, y = hwy, color = class))
+```
+\end{center}
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+```{r, eval = FALSE}
+ggplot(data = mpg) +
+geom_point(mapping = aes(x = displ, y = hwy, color = class))+
+facet_wrap(~ class, nrow = 2)
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+
+\begin{center}
+```{r, echo = FALSE, out.width = '70%'}
+ggplot(data = mpg) +
+geom_point(mapping = aes(x = displ, y = hwy, color = class))+
+facet_wrap(~ class, nrow = 2)
+```
+\end{center}
+
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+\scriptsize
+```{r}
+diamonds <- ggplot2::diamonds  
+names(diamonds)    
+head(diamonds)     
+```
+\normalsize
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+```{r,  eval = FALSE}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+
+## **\texttt{ggplot}** in \textbf{\textsf{R}}: Illustration 
+
+\begin{center}
+```{r,  echo = FALSE, out.width = '70%'}
+ggplot(data = diamonds) +
+geom_bar(mapping = aes(x = cut, fill = clarity))
+```
+\end{center}
+
+## Useful commands in \textbf{\textsf{R}} 
+\label{commands}
+
+- I will show the implementation of every method covered in the course
+- Here are some basic but useful commands:
+    - **\texttt{head()}** shows the first lines of a data set
+    - **\texttt{summary()}** shows a summary of the data (good to check everything is ok)
+    - **\texttt{ggplot()}** for graphs of all kinds (from the **\texttt{ggplot2}** or **\texttt{tidyverse}** packages)
+    - **\texttt{nrow()}** and **\texttt{nrow()}** return the number of rows and columns of a data set
+    - **\texttt{ifelse()}** creates a 1/0 variable (or other values) based on a condition we specify (1 if the condition is met, 0 otherwise)
+    - **\texttt{lm()}** computes the OLS estimator (built-in \textbf{\textsf{R}}. See chapter on linear regression)
+    <!-- - **ivreg** computes the 2SLS estimator (***AER*** package) -->
+    <!-- - **randomForest** builds a random forest (***randomForest*** package) -->
+    <!-- - **rpart** builds a regression or classification tree (***rpart*** package) -->
+    <!-- - **svm** builds SVMs (***e1071*** package, and the ***kernlab*** package for svm plots) -->
+    <!-- - **hclust** performs clutering (***stats*** package) -->
+    <!-- - **prcomp** performs PCA (***stats*** package) -->
+- Run **\texttt{??function}** to see help on how to use the command (look for the exact function among the ones proposed on the bottom right panel)
+- Example: **\texttt{??lm}**
+
+## Loops in \textbf{\textsf{R}}   
+\label{loop}
+
+- A **loop** is a sequence of instructions that the software will execute in an iterated fashion
+- 3 types of loops:
+    - \textbf{\texttt{for}} loops repeat some instructions a predetermined number of times. Generally, an update is made at the beginning of each iteration
+    - \textbf{\texttt{while}} loops execute a sequence of instructions as long as a criterion is satisfied. The criterion is checked at each iteration (so without an update, the loop may never stop!)
+    - \textbf{\texttt{if}} "loops" check if a condition is satisfied, execute a command if the condition is **TRUE**, and another command if it is **FALSE**
+
+## Loops in \textbf{\textsf{R}}: Basic \texttt{for} loop
+\scriptsize
+```{r}
+rounds <- 10
+vec <- matrix(0, nrow = 1, ncol = rounds) # Making a matrix 
+#of 0 that the loop will replace with what I want
+
+for (i in 1:rounds){    # i is the index: It will change at each iteration
+vec[1, i] <- i
+}
+vec
+```
+
+## Loops in \textbf{\textsf{R}}: Basic \texttt{while} loop
+\scriptsize
+```{r}
+vec <- c() # Making an empty vector without a specified size
+index <- 1
+limit <- 15
+
+while (index < limit){    # i is the index: It will change at each iteration
+vec[index] <- index*3
+index <- index + 1
+}
+vec
+length(vec)   # gives the number of elements in vec
+```
+## Loops in \textbf{\textsf{R}}: Basic \texttt{if} statements
+```{r}
+x <- 5
+if (x < 8){
+  print("x is smaller than 8!!")
+  }  else{
+  print("x is bigger than 8!!")
+  }
+
+# The ifelse function creates an object from  condition to check
+y <- ifelse(x >= 5, "x is bigger or equal to 5", "x is strictly smaller than 5")
+z <- ifelse(x > 2, x^2, 1)
+y
+z
+
+```
+
+## Loops in \textbf{\textsf{R}}: A simulation
+- Let us make a simulation
+- In simulation, we are God: We can generate variables according to the assumptions we want to satisfy
+- Simulations are used to see how an estimator does over multiple samples of different size
+- We can check the **bias**, **variance**, **consistency** and **distribution** of estimators
+- Let us use a loop to generate many samples and compute the mean of each
+
+
+## Loops in \textbf{\textsf{R}}: A simulation
+```{r}
+rounds <- 10
+vec <- matrix(0, nrow = 1, ncol = rounds) # Making a matrix 
+#of 0 that the loop will replace with what I want
+
+for (i in 1:rounds){# i is the index: It will change at each iteration
+x <- rnorm(100)
+vec[i] <- mean(x)
+}
+vec
+```
+
+## More data to look at
+- Many data sets are available through packages. I recommend you check 
+    - **\texttt{nycflights13}** 
+    - **\texttt{lubridate}** 
+    - **\texttt{Lock5Data}** 
+    - **\texttt{crimedata}** 
+    - **\texttt{fivethirtyeight}**
+- Be patient, use online help to learn. You will get a lot of errors, and some of them will be hard to decipher at first 
+- It opens the door to many other computer languages
+- Have fun!
+
+
+<!-- ## Something cool -->
+
+<!--  There is a package called `magick` that allows you to include gifs in your plots ! I do not really know how the details work, so I copied and paste the code from this website: \href{http://danielphadley.com/ggplot-Logo/}{\textbf{here}} -->
+<!--  See also \href{https://cran.r-project.org/web/packages/magick/vignettes/intro.html}{\textbf{here}} -->
+
+<!-- It takes a gif in the `png` format and adds it to a ggplot. -->
+
+<!-- \scriptsize -->
+<!-- ```{r, eval = FALSE} -->
+<!--  library(magick) -->
+<!--  plot <- image_read("test_error.png") -->
+<!--  # And bring in a logo -->
+<!--  logo_raw <- image_read("https://i.imgur.com/e1IneGq.jpg") -->
+<!--  frames <- lapply(logo_raw, function(frame) { -->
+<!--    image_composite(plot, frame, offset = "+50+500") -->
+<!--  }) -->
+
+<!--  animation <- image_animate(image_join(frames)) -->
+<!--  # animation -->
+<!--  # image_write(animation, "test_error_Travolta.gif") -->
+<!-- ``` -->
+
+<!-- ## Something cool -->
+<!-- \includegraphics{test_error_Travolta.gif} -->
+<!-- \movie[label=show3,width=1.0\textwidth,poster -->
+<!--        ,autostart,showcontrols,loop] -->
+<!--   {\includegraphics[width=1.0\textwidth]{test_error_Travolta.png}}{test_error_Travolta.mp4} -->
+<!-- \movie[externalviewer]{\includegraphics[width=\textwidth]{test_error_Travolta.png}}test_error_Travolta.mp4} -->
+
+<!-- ## Conclusion -->
+<!-- - gnagnagni -->
